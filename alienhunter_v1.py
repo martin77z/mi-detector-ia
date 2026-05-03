@@ -12,13 +12,40 @@ st.set_page_config(page_title="NEXUS-7 CONTACT", page_icon="👽", layout="wide"
 if 'historial' not in st.session_state:
     st.session_state['historial'] = []
 
-# ESTILO VISUAL
+# ESTILO VISUAL MEJORADO (CON BOTÓN DE MENÚ SIEMPRE VISIBLE)
 st.markdown("""
     <style>
     .stApp { background-color: #020502; color: #00FF41; font-family: 'Courier New', monospace; }
-    .stButton>button { border: 2px solid #00FF41; background-color: #000; color: #00FF41; font-weight: bold; width: 100%; height: 3.5em; }
-    .stButton>button:hover { background-color: #00FF41; color: #000; box-shadow: 0 0 30px #00FF41; }
-    .info-card { background-color: #0a1a0a; border: 1px solid #1a3a1a; padding: 15px; border-radius: 5px; margin-bottom: 10px; }
+    
+    /* Forzar visibilidad del botón para abrir el Sidebar */
+    [data-testid="stSidebarCollapsedControl"] {
+        background-color: #00FF41 !important;
+        color: #000 !important;
+        border-radius: 5px;
+        left: 10px;
+        top: 10px;
+    }
+
+    .stButton>button { 
+        border: 2px solid #00FF41; 
+        background-color: #000; 
+        color: #00FF41; 
+        font-weight: bold; 
+        width: 100%; 
+        height: 3.5em; 
+    }
+    .stButton>button:hover { 
+        background-color: #00FF41; 
+        color: #000; 
+        box-shadow: 0 0 30px #00FF41; 
+    }
+    .info-card { 
+        background-color: #0a1a0a; 
+        border: 1px solid #1a3a1a; 
+        padding: 15px; 
+        border-radius: 5px; 
+        margin-bottom: 10px; 
+    }
     #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
     </style>
     """, unsafe_allow_html=True)
@@ -34,7 +61,7 @@ info_objetivos = {
     "Cúmulo M13": {"Dist": 25000.0, "Tipo": "Cúmulo Estelar", "Nota": "300.000 estrellas emitiendo."}
 }
 
-st.title("📡 NEXUS-7: FIRST CONTACT v5.7.1")
+st.title("📡 NEXUS-7: FIRST CONTACT v5.7.2")
 
 # --- SIDEBAR ---
 st.sidebar.title("🎛️ PANEL DE CONTROL")
@@ -56,7 +83,7 @@ col_radar, col_log = st.columns([2, 1])
 
 with col_radar:
     v_cascada = st.empty()
-    v_potencia = st.empty() # Marcador reservado para evitar NameError
+    v_potencia = st.empty() 
 
 with col_log:
     st.subheader("📟 STATUS LOG")
@@ -94,13 +121,13 @@ if st.button("🚀 INICIAR ESCANEO DE BANDA ESTRECHA"):
         v_cascada.pyplot(fig1)
         plt.close(fig1)
         
-        # 2. Render Potencia (CORREGIDO)
+        # 2. Render Potencia (Fijado para evitar errores)
         fig2, ax2 = plt.subplots(figsize=(10, 2), facecolor='black')
         ax2.plot(ruido, color='#00FF41', linewidth=1)
         ax2.set_facecolor('black')
-        ax2.set_ylim(0, 45) 
+        ax2.set_ylim(0, 50) 
         ax2.axis('off')
-        v_potencia.pyplot(fig2) # Ahora fig2 siempre existe aquí
+        v_potencia.pyplot(fig2)
         plt.close(fig2)
         
         v_terminal.code(f"MUESTRA: {t}/{pasos}\nSNR: {np.max(ruido):.1f}\nANALIZANDO...")
@@ -112,6 +139,7 @@ if st.button("🚀 INICIAR ESCANEO DE BANDA ESTRECHA"):
         v_resultado.write(f"Coherencia artificial confirmada en {objetivo}.")
         if st.button("💾 GUARDAR CONTACTO"):
             st.session_state.historial.append({"Fecha": datetime.now().strftime("%H:%M"), "Lugar": objetivo, "Tipo": "INTELIGENTE"})
+            st.rerun()
     else:
         v_resultado.error("❌ INTERFERENCIA DETECTADA")
         v_resultado.write("Señal demasiado ancha. Clasificada como RFI.")
