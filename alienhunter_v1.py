@@ -3,110 +3,112 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import random
+from datetime import datetime
 
-# Configuración de página con estilo oscuro inyectado
-st.set_page_config(page_title="DEEP SPACE RADAR", page_icon="📡", layout="wide")
+# CONFIGURACIÓN DE LA APP
+st.set_page_config(page_title="NEXUS-7 PRO", page_icon="📡", layout="wide")
 
+# Inicializar Base de Datos en la sesión (Punto B)
+if 'historial' not in st.session_state:
+    st.session_state['historial'] = []
+
+# ESTILO "NASA DARK MODE"
 st.markdown("""
     <style>
-    /* Estética General */
-    .main { background-color: #000000; }
-    .stApp { background-color: #000000; color: #00FF41; font-family: 'Courier New', Courier, monospace; }
-    
-    /* Botón Táctico */
-    .stButton>button {
-        border: 2px solid #00FF41;
-        background-color: #000000;
-        color: #00FF41;
-        font-weight: bold;
-        text-transform: uppercase;
-        letter-spacing: 2px;
-        transition: all 0.3s;
-    }
-    .stButton>button:hover {
-        background-color: #00FF41;
-        color: #000000;
-        box-shadow: 0 0 15px #00FF41;
-    }
-    
-    /* Paneles */
-    .stMetric { border: 1px solid #333; padding: 15px; border-radius: 10px; }
+    .stApp { background-color: #050505; color: #00FF41; font-family: 'Courier New', monospace; }
+    .stButton>button { border: 2px solid #00FF41; background-color: #000; color: #00FF41; width: 100%; transition: 0.3s; }
+    .stButton>button:hover { background-color: #00FF41; color: #000; box-shadow: 0 0 20px #00FF41; }
+    .stMetric { border: 1px solid #111; background-color: #0a0a0a; padding: 10px; border-radius: 5px; }
+    #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
     </style>
     """, unsafe_allow_html=True)
 
-# --- HEADER ---
-st.title("📟 NEXUS-7: DEEP SPACE ANALYZER")
+st.title("📟 NEXUS-7: DEEP SPACE ANALYZER v3.0")
 st.write("---")
 
-# --- SIDEBAR PROFESIONAL ---
-st.sidebar.header("📡 CONFIGURACIÓN DEL ARRECHO")
-objetivos = {
-    "Próxima b": "4.2 LY",
-    "KIC 8462852 (Tabby)": "1470 LY",
-    "TRAPPIST-1e": "40 LY",
-    "Sagittarius A*": "26k LY"
-}
-target = st.sidebar.selectbox("Fijar Objetivo", list(objetivos.keys()))
-gain = st.sidebar.slider("Ganancia de Antena (dB)", 0, 100, 75)
+# --- BARRA LATERAL ---
+st.sidebar.header("🕹️ CONTROL DE MISIÓN")
+objetivo = st.sidebar.selectbox("Fijar Objetivo", ["Próxima b", "Kepler-186f", "TRAPPIST-1e", "Estrella de Tabby", "Sagitario A*"])
+potencia = st.sidebar.slider("Potencia de Antena (dB)", 20, 100, 85)
 
-st.sidebar.markdown(f"""
----
-**COORDINADAS:** FIJADAS  
-**ESTADO:** LISTO PARA ESCANEO  
-**DISTANCIA:** {objetivos[target]}
-""")
+# --- PANEL PRINCIPAL ---
+col_radar, col_telemetria = st.columns([2, 1])
 
-# --- PANTALLA PRINCIPAL ---
-col_main, col_data = st.columns([2, 1])
+with col_radar:
+    st.subheader(f"📡 SECTOR: {objetivo.upper()}")
+    pantalla = st.empty()
+    progreso = st.empty()
 
-with col_main:
-    st.write(f"### [ SECTOR: {target.upper()} ]")
-    view = st.empty()
-    progress_bar = st.empty()
-
-with col_data:
-    st.write("### 📜 TELEMETRÍA")
-    log = st.empty()
+with col_telemetria:
+    st.subheader("📊 DATOS EN VIVO")
+    consola = st.empty()
     stats = st.empty()
 
-if st.button("EJECUTAR ESCANEO DE BANDA ESTRECHA"):
-    t_steps = 80
-    f_chans = 400
-    display_data = np.zeros((t_steps, f_chans))
-    
-    # Parámetros de señal
-    start_chan = random.randint(100, 300)
-    drift = random.uniform(-0.5, 0.5)
+# Lógica del Escaneo
+if st.button("EJECUTAR ESCANEO TÁCTICO"):
+    filas, columnas = 60, 400
+    matriz = np.zeros((filas, columnas))
+    pos_señal = random.randint(100, 300)
+    deriva = random.uniform(-0.4, 0.4)
 
-    for t in range(t_steps):
-        # Generar línea
-        noise = np.random.normal(0.5, 0.2, f_chans)
-        center = int(start_chan + t * drift)
-        signal = (gain/10) * np.exp(-((np.arange(f_chans) - center)**2) / 4)
+    for t in range(filas):
+        ruido = np.random.normal(0.5, 0.15, columnas)
+        centro = int(pos_señal + t * deriva)
+        if 0 <= centro < columnas:
+            # Inyectar señal según potencia
+            ruido[centro-2:centro+3] += (potencia / 12)
         
-        display_data[t] = noise + signal
+        matriz[t] = ruido
         
-        # Renderizado Táctico
-        fig, ax = plt.subplots(figsize=(8, 5), facecolor='black')
-        ax.imshow(display_data, aspect='auto', cmap='magma', origin='lower')
-        ax.axis('off') # Eliminar ejes para modo "radar"
-        view.pyplot(fig)
+        # Renderizado de Radar
+        fig, ax = plt.subplots(figsize=(10, 5), facecolor='black')
+        ax.imshow(matriz, aspect='auto', cmap='magma', origin='lower')
+        ax.axis('off')
+        pantalla.pyplot(fig)
         plt.close(fig)
         
-        progress_bar.progress((t + 1) / t_steps)
-        log.code(f"DAT_STREAM: {random.random()}\nFREQ_LOCK: {center}MHz\nSIG_STRENGTH: {np.max(signal):.2f}")
-        time.sleep(0.03)
+        progreso.progress((t+1)/filas)
+        consola.code(f"SYNC_OK..{random.random()}\nFREQ_LOCK: {centro}MHz\nGAIN: +{potencia}dB")
+        time.sleep(0.04)
 
-    # --- INFORME FINAL ---
+    # --- RESULTADOS ---
+    score = random.randint(88, 99) if potencia > 70 else random.randint(10, 45)
+    
     st.write("---")
     res1, res2, res3 = st.columns(3)
+    res1.metric("CONFIDENCIALIDAD IA", f"{score}%")
+    res2.metric("TIPO DE SEÑAL", "BANDA ESTRECHA" if score > 70 else "RUIDO TÉRMICO")
     
-    score = random.randint(85, 99) if gain > 50 else random.randint(10, 40)
+    # PUNTO A: DECODIFICADOR DE MENSAJES
+    if score > 90:
+        st.warning("⚠️ ¡SEÑAL DE ALTA INTENSIDAD DETECTADA! INICIANDO DECODIFICACIÓN...")
+        mensajes_alien = [
+            "2-3-5-7-11-13-17-19-23 (SEC. PRIMOS)",
+            "01001000 01001111 01001100 01000001",
+            "COORDINADAS: 14.242n, 10.121e",
+            "PATRÓN MATEMÁTICO: FIBONACCI DETECTADO",
+            "ALERTA: SEÑAL DE ORIGEN ARTIFICIAL CONFIRMADA"
+        ]
+        with st.expander("🔓 VER MENSAJE DECODIFICADO"):
+            st.code(random.choice(mensajes_alien))
     
-    res1.metric("CONFIDENCIALIDAD", f"{score}%")
-    res2.metric("TIPO", "BANDA ESTRECHA" if score > 70 else "RUIDO")
-    res3.write(f"**VEREDICTO IA:** {'ALERTA DE TECNOFIRMA' if score > 70 else 'SQUELCH ACTIVO'}")
+    # PUNTO B: REGISTRO DE HALLAZGOS
+    nuevo_hallazgo = {
+        "Fecha": datetime.now().strftime("%Y-%m-%d %H:%M"),
+        "Objetivo": objetivo,
+        "Probabilidad": f"{score}%",
+        "Veredicto": "EXITOSO" if score > 70 else "FALLIDO"
+    }
     
-    if score > 70:
-        st.success(f"¡Atención! Patrón detectado en {target}. La señal muestra coherencia artificial.")
-        st.balloons()
+    if st.button("💾 GUARDAR EN BASE DE DATOS"):
+        st.session_state['historial'].append(nuevo_hallazgo)
+        st.success("Registro guardado en el Archivo Nexus-7.")
+
+# --- SECCIÓN DE HISTORIAL (Punto B) ---
+if st.session_state['historial']:
+    st.write("---")
+    st.subheader("📂 ARCHIVO HISTÓRICO DE HALLAZGOS")
+    st.table(st.session_state['historial'])
+    if st.button("🗑️ LIMPIAR REGISTROS"):
+        st.session_state['historial'] = []
+        st.rerun()
