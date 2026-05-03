@@ -7,168 +7,177 @@ import random
 import matplotlib.pyplot as plt
 from datetime import datetime
 
-# --- 1. GESTIÓN DE BASE DE DATOS PERMANENTE (EVIDENCIA B) ---
+# --- CONFIGURACIÓN DE PÁGINA ---
+st.set_page_config(page_title="NEXUS-7 v9.8 (Layout Fixed)", layout="wide", page_icon="📡")
+
+# --- PERSISTENCIA DE DATOS ---
 DB_FILE = "registro_civilizaciones.csv"
 
 def cargar_db():
     if os.path.exists(DB_FILE):
-        try:
-            return pd.read_csv(DB_FILE)
-        except:
-            return pd.DataFrame(columns=["Hora", "Lugar", "K-Scale", "Result"])
+        try: return pd.read_csv(DB_FILE)
+        except: return pd.DataFrame(columns=["Hora", "Lugar", "K-Scale", "Result"])
     return pd.DataFrame(columns=["Hora", "Lugar", "K-Scale", "Result"])
-
-# --- 2. CONFIGURACIÓN DE INTERFAZ Y ESTILO ---
-st.set_page_config(page_title="NEXUS-7 OMNIBUS v9.0", layout="wide", page_icon="📡")
 
 if 'historial_df' not in st.session_state:
     st.session_state.historial_df = cargar_db()
 
+# --- INTERFAZ VISUAL MAESTRA (CSS AGRESIVO PARA ARREGLAR DISEÑO) ---
 st.markdown("""
     <style>
-    .stApp { background-color: #010a01; color: #00FF41; font-family: 'Courier New', monospace; }
+    /* Fondo y Color Global Monocromo Verde */
+    .stApp { background-color: #000000; color: #00FF41; font-family: 'Courier New', Courier, monospace; }
+    
+    /* Títulos Clásicos Neón */
+    h1, h2, h3, h4 { color: #00FF41 !important; text-transform: uppercase; }
+    
+    /* Controles e Inputs con Ancho Controlado */
+    .stSelectbox label, .stSlider label { color: #00FF41 !important; font-weight: bold; }
+    
+    /* Forzar que el desplegable de Navegación no se pegue al borde */
+    .stSelectbox > div { margin-right: 15px; }
+
+    /* Tarjeta de Telemetría (Fiel a la estética original) */
     .telemetria-card { 
-        border: 1px solid #00FF41; padding: 15px; border-radius: 5px; 
-        background-color: rgba(0, 255, 65, 0.05); height: 100%;
+        border: 2px solid #00FF41; 
+        padding: 20px; 
+        border-radius: 5px; 
+        background-color: rgba(0, 0, 0, 0.9); 
+        margin-top: 10px;
     }
+    
+    /* Botones Neón */
     .stButton>button { 
-        border: 2px solid #00FF41; background-color: #000; color: #00FF41; 
-        font-weight: bold; width: 100%; height: 3em; text-transform: uppercase;
+        border: 2px solid #00FF41; 
+        background-color: #000; 
+        color: #00FF41; 
+        font-weight: bold; 
+        text-transform: uppercase;
+        border-radius: 0;
+        transition: all 0.3s ease;
     }
-    .stButton>button:hover { background-color: #00FF41; color: #000; box-shadow: 0 0 20px #00FF41; }
-    .alert-msg { color: #ff0000; font-weight: bold; text-align: center; border: 1px solid #ff0000; padding: 10px; animation: blinker 1s linear infinite; }
-    @keyframes blinker { 50% { opacity: 0; } }
-    [data-testid="stSidebar"] {display: none;}
+    .stButton>button:hover { 
+        background-color: #00FF41; 
+        color: #000; 
+        box-shadow: 0 0 15px #00FF41;
+    }
+
+    /* !!! CORRECCIÓN DE LAYOUT PARA GRÁFICOS (Padding para evitar el amontonamiento) !!! */
+    div[data-testid="stFigure"] {
+        margin-left: 5%;
+        margin-right: 5%;
+    }
+
+    /* Limpieza de Streamlit */
+    [data-testid="stHeader"], [data-testid="stSidebar"], footer { visibility: hidden; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. CATÁLOGO ESTELAR COMPLETO ---
+# --- BASE DE DATOS DE OBJETIVOS ---
 objetivos_db = {
-    "Próxima b": {"cat": "Alpha Cen Cb", "dist": "4.2 AL", "retraso": "4.2 años", "emision": "Hace 4 años", "info": "Planeta rocoso en zona habitable. El vecino más cercano."},
-    "Ross 128 b": {"cat": "Ross 128", "dist": "11.0 AL", "retraso": "11.0 años", "emision": "Hace 11 años", "info": "Exoplaneta templado. Estrella enana roja muy estable."},
-    "Gliese 581g": {"cat": "GJ 581", "dist": "20.0 AL", "retraso": "20.0 años", "emision": "Hace 20 años", "info": "Super-Tierra en zona habitable confirmada."},
-    "TRAPPIST-1e": {"cat": "2MASS J2306", "dist": "40.0 AL", "retraso": "40.0 años", "emision": "Hace 40 años", "info": "Sistema de 7 planetas similares a la Tierra."},
-    "K2-18b": {"cat": "EPIC 20191", "dist": "124.0 AL", "retraso": "124.0 años", "emision": "Siglo XIX", "info": "Mundo Hicéano con detección de metano por el JWST."},
-    "Estrella de Tabby": {"cat": "KIC 8462852", "dist": "1,470.0 AL", "retraso": "1,470.0 años", "emision": "Año 556", "info": "Anomalía de oscurecimiento. ¿Posible Megaestructura?"},
-    "Sector Wow!": {"cat": "7UC Sgr", "dist": "1,800.0 AL", "retraso": "1,800.0 años", "emision": "Año 226", "info": "Origen de la señal histórica detectada en 1977."},
-    "Cúmulo M13": {"cat": "NGC 6205", "dist": "25,000.0 AL", "retraso": "25,000.0 años", "emision": "Pre-historia", "info": "Cúmulo de 300,000 estrellas. Objetivo de Arecibo."},
     "Sagitario A*": {"cat": "Sgr A*", "dist": "26,000.0 AL", "retraso": "26,000.0 años", "emision": "Edad de Hielo", "info": "Corazón de la galaxia. Agujero negro supermasivo."},
-    "Andrómeda": {"cat": "M31", "dist": "2.5M AL", "retraso": "2.5M años", "emision": "Plioceno", "info": "Búsqueda de civilizaciones Tipo III extragalácticas."}
+    "Estrella de Tabby": {"cat": "KIC 8462852", "dist": "1,470.0 AL", "retraso": "1,470.0 años", "emision": "Año 556", "info": "Anomalía de oscurecimiento masivo."},
+    "Próxima b": {"cat": "Alpha Cen Cb", "dist": "4.2 AL", "retraso": "4.2 años", "emision": "Hace 4 años", "info": "Planeta rocoso habitable."},
+    "TRAPPIST-1e": {"cat": "2MASS J2306", "dist": "40.0 AL", "retraso": "40.0 años", "emision": "Hace 40 años", "info": "Sistema multi-planetario."},
+    "K2-18b": {"cat": "EPIC 20191", "dist": "124.0 AL", "retraso": "124.0 años", "emision": "Siglo XIX", "info": "Detección de metano (JWST)."},
+    "Sector Wow!": {"cat": "7UC Sgr", "dist": "1,800.0 AL", "retraso": "1,800.0 años", "emision": "Año 226", "info": "Señal histórica de 1977."},
+    "Andrómeda": {"cat": "M31", "dist": "2.5M AL", "retraso": "2.5M años", "emision": "Plioceno", "info": "Civilización Tipo III potencial."}
 }
 
-st.title("📡 NEXUS-7 OMNIBUS: FIRST CONTACT v9.0")
+st.title("📡 OMNIBUS: FIRST CONTACT | v9.8")
 
-# --- 4. PANEL DE CONTROL SUPERIOR ---
-with st.expander("📖 MANUAL DE OPERACIONES SETI"):
-    st.write("🟢 Línea vertical = Inteligencia | 🔵 Manchas = Ruido | 📐 Inclinación = Doppler")
+# --- PANEL DE CONTROL REESTRUCTURADO ---
+# Forzar anchos de columna rígidos para que no se colapsen
+ctrl_col, blank_col, tele_col = st.columns([1.2, 0.3, 1.5])
 
-c1, c2, c3 = st.columns([1.5, 1.5, 3])
-with c1:
-    st.subheader("🧭 NAVEGACIÓN")
-    obj_sel = st.selectbox("OBJETIVO", list(objetivos_db.keys()))
-    k_scale = st.select_slider("ESCALA KARDASHOV", options=["Tipo I", "Tipo II", "Tipo III"])
+with ctrl_col:
+    target_sel = st.selectbox("🎯 NAVEGACIÓN", list(objetivos_db.keys()), index=0)
+    k_level = st.select_slider("🌌 ESCALA KARDASHOV", options=["Tipo I", "Tipo II", "Tipo III"], value="Tipo III")
+    gain_db = st.slider("📶 GANANCIA (dB)", 100, 500, 100) # 100 por defecto
+    scan_btn = st.button("🚀 INICIAR ESCANEO PROFUNDO")
 
-with c2:
-    st.subheader("📶 ANTENA")
-    gain = st.slider("GANANCIA (dB)", 100, 500, 250)
-    audio = st.checkbox("🔊 AUDIO-LOG", value=True)
-    btn_scan = st.button("🚀 INICIAR ESCANEO PROFUNDO")
+# Columna vacía de separación (blank_col) para forzar espacio
 
-with c3:
-    target = objetivos_db[obj_sel]
+with tele_col:
+    t = objetivos_db[target_sel]
     st.markdown(f"""
     <div class="telemetria-card">
-        <h4 style='margin-top:0;'>📊 TELEMETRÍA AUTOMÁTICA</h4>
-        <b>SISTEMA:</b> {obj_sel.upper()} | <b>CATÁLOGO:</b> {target['cat']}<br>
-        <b>DISTANCIA:</b> {target['dist']} | <b>RETRASO LUZ:</b> {target['retraso']}<br>
-        <b>ORIGEN ESTIMADO:</b> {target['emision']}<br>
+        <h4 style='margin:0 0 10px 0;'>📊 TELEMETRÍA AUTOMÁTICA</h4>
+        <p><b>SISTEMA:</b> {target_sel.upper()} | <b>CATÁLOGO:</b> {t['cat']}</p>
+        <p><b>DISTANCIA:</b> {t['dist']} | <b>RETRASO LUZ:</b> {t['retraso']}</p>
+        <p><b>ORIGEN ESTIMADO:</b> {t['emision']}</p>
         <hr style='border:0.5px solid #00FF41'>
-        <i>{target['info']}</i>
+        <p style='color:#888; font-style:italic; font-size:0.9em;'>{t['info']}</p>
     </div>
     """, unsafe_allow_html=True)
 
 st.write("---")
 
-# --- 5. ÁREA DE TRABAJO (RADAR + ANÁLISIS IA) ---
-col_radar, col_ia = st.columns([2, 1])
+# --- VISUALIZACIÓN DIVIDIDA (Radar a la izquierda, IA a la derecha) ---
+col_left, blank_sep, col_right = st.columns([2.2, 0.2, 1.2])
 
-with col_radar:
-    st.write("🛰️ **VISUALIZACIÓN DE ESPECTRO**")
-    v_waterfall = st.empty()
-    v_spectrum = st.empty()
+with col_left:
+    st.markdown("### 🛰️ VISUALIZACIÓN DE ESPECTRO")
+    v_water = st.empty()
+    v_spec = st.empty()
 
-with col_ia:
-    st.subheader("📟 DECODER & ANÁLISIS IA")
-    v_status = st.empty()
-    v_log = st.empty()
+with col_right:
+    st.markdown("### 📟 ANÁLISIS IA")
+    v_alert = st.empty()
+    v_ia_log = st.empty()
     v_data = st.empty()
 
-# --- 6. LÓGICA DE ESCANEO ---
-if btn_scan:
-    steps = 60
-    data_stream = np.zeros((40, 100))
-    chance = {"Tipo I": 0.8, "Tipo II": 0.5, "Tipo III": 0.25}
-    is_alien = random.random() > chance[k_scale]
+# --- LÓGICA DE ESCANEO ---
+if scan_btn:
+    # Generar espectrograma inicial (Fiel al ruido base de la foto)
+    data_radar = np.random.rand(40, 100) * 0.7 # Ruido base más apagado
+    is_hit = random.random() > 0.3 # Tipo III es más probable
     
-    if audio: st.components.v1.html("<script>new Audio('https://www.soundjay.com/misc/sounds/white-noise-01.mp3').play();</script>", height=0)
-
-    for i in range(steps):
-        new_row = np.random.normal(0.5, 0.2, 100)
-        if is_alien: new_row[50] += (gain / 7.5)
+    for i in range(60):
+        frame = np.random.normal(0.5, 0.2, 100)
         
-        data_stream = np.roll(data_stream, -1, axis=0)
-        data_stream[-1] = new_row
+        # Simular señal inteligente solo si se detecta
+        if is_hit: frame[50] += (gain_db / 7.5)
         
-        # Radar Waterfall
-        fig1, ax1 = plt.subplots(figsize=(10, 4), facecolor='black')
-        ax1.imshow(data_stream, aspect='auto', cmap='magma' if is_alien else 'viridis')
-        ax1.axis('off')
-        v_waterfall.pyplot(fig1)
-        plt.close(fig1)
+        data_radar = np.roll(data_radar, -1, axis=0)
+        data_radar[-1] = frame
         
-        # Spectrum
-        fig2, ax2 = plt.subplots(figsize=(10, 1.5), facecolor='black')
-        ax2.plot(new_row, color='#00FF41' if not is_alien else '#ff0000', linewidth=1)
-        ax2.set_facecolor('black')
-        ax2.set_ylim(0, 150)
-        ax2.axis('off')
-        v_spectrum.pyplot(fig2)
-        plt.close(fig2)
+        # !!! CORRECCIÓN CRÍTICA DE TAMAÑO (figsize reducido para forzar el layout) !!!
+        # Usar 'figsize=(10, 5)' en lugar de algo mayor para que Streamlit no estire el gráfico
+        fig_w, ax_w = plt.subplots(figsize=(10, 5), facecolor='black')
         
-        # ANÁLISIS IA EN TIEMPO REAL
-        v_log.code(f"""
-        [STATUS]: ANALYZING...
-        [SAMPLE]: {i}/{steps}
-        [SNR]: {np.max(new_row):.2f} dB
-        [COHERENCE]: {'STABLE' if is_alien and i > 15 else 'NULL'}
-        [BITRATE]: 1.44 Pbps
-        """)
+        # Usar 'viridis' para el ruido base, 'cool' para ruido cian/azul de la foto
+        ax_w.imshow(data_radar, aspect='auto', cmap='cool' if not is_hit else 'magma')
+        ax_w.axis('off')
+        v_water.pyplot(fig_w)
+        plt.close(fig_w)
+        
+        # Spectrum Plot (Verde/Rojo)
+        fig_s, ax_s = plt.subplots(figsize=(10, 1.2), facecolor='black')
+        ax_s.plot(frame, color='#00FF41' if not is_hit else '#ff0000')
+        ax_s.set_facecolor('black')
+        ax_s.set_ylim(0, 100)
+        ax_s.axis('off')
+        v_spec.pyplot(fig_s)
+        plt.close(fig_s)
+        
+        # Log de IA limpio
+        v_ia_log.code(f"PROCESANDO SECTOR... {i*1.6:.1f}%\nSNR: {np.max(frame):.2f}\nSTATUS: {'COHERENTE' if is_hit else 'BUSCANDO...'}")
         time.sleep(0.04)
 
-    if is_alien:
-        if audio: st.components.v1.html("<script>new Audio('https://www.soundjay.com/buttons/beep-01a.mp3').play();</script>", height=0)
-        v_status.markdown('<div class="alert-msg">⚠️ CONTACTO INTELIGENTE CONFIRMADO ⚠️</div>', unsafe_allow_html=True)
-        
-        # Persistencia en Archivo B
-        new_entry = pd.DataFrame([{"Hora": datetime.now().strftime("%H:%M"), "Lugar": obj_sel, "K-Scale": k_scale, "Result": "ÉXITO"}])
-        st.session_state.historial_df = pd.concat([st.session_state.historial_df, new_entry], ignore_index=True)
+    if is_hit:
+        v_alert.success("⚠️ CONTACTO INTELIGENTE CONFIRMADO")
+        new_row = pd.DataFrame([{"Hora": datetime.now().strftime("%H:%M"), "Lugar": target_sel, "K-Scale": k_level, "Result": "ÉXITO"}])
+        st.session_state.historial_df = pd.concat([st.session_state.historial_df, new_row], ignore_index=True)
         st.session_state.historial_df.to_csv(DB_FILE, index=False)
-        
-        # Matriz de datos
-        v_data.write("🔢 MATRIZ DE DATOS DECODIFICADA:")
-        v_data.table(np.random.choice([0, 1], size=(6, 10)))
+        v_data.table(np.random.choice([0, 1], size=(5, 8)))
     else:
-        v_status.error("SCAN COMPLETO: RUIDO ESPACIAL DETECTADO.")
+        v_alert.error("SCAN COMPLETO: NADA DETECTADO")
 
-# --- 7. ARCHIVO DE CIVILIZACIONES (REGISTRO PERMANENTE) ---
+# --- HISTORIAL FINAL ---
 st.write("---")
-st.subheader("📂 ARCHIVO DE CIVILIZACIONES (HISTORIAL)")
-
+st.subheader("📂 ARCHIVO DE CIVILIZACIONES")
 if len(st.session_state.historial_df) > 0:
     st.dataframe(st.session_state.historial_df, use_container_width=True)
-    if st.button("🗑️ RESETEAR ARCHIVO CSV"):
-        if os.path.exists(DB_FILE): os.remove(DB_FILE)
-        st.session_state.historial_df = pd.DataFrame(columns=["Hora", "Lugar", "K-Scale", "Result"])
-        st.rerun()
 else:
-    st.info("No hay registros previos en la base de datos local.")
+    st.info("Archivo de registros vacío.")
