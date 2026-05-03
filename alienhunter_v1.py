@@ -1,166 +1,167 @@
 import streamlit as st
-import pandas as pd
 import numpy as np
-import os
+import matplotlib.pyplot as plt
 import time
 import random
-import matplotlib.pyplot as plt
+import pandas as pd
 from datetime import datetime
 
-# --- GESTIÓN DE BASE DE DATOS (NEXUS-7 Local) ---
-DB_FILE = "registro_civilizaciones.csv"
+# CONFIGURACIÓN MAESTRA
+st.set_page_config(page_title="NEXUS-7 OMNIBUS v7.5", page_icon="📡", layout="wide")
 
-def cargar_db():
-    if os.path.exists(DB_FILE):
-        try:
-            return pd.read_csv(DB_FILE)
-        except:
-            return pd.DataFrame(columns=["Hora", "Lugar", "Escala K", "Result"])
-    return pd.DataFrame(columns=["Hora", "Lugar", "Escala K", "Result"])
+if 'historial' not in st.session_state:
+    st.session_state['historial'] = []
 
-# --- CONFIGURACIÓN DE LA INTERFAZ ---
-st.set_page_config(page_title="NEXUS-7 v9.8 SETI Console", layout="wide", page_icon="📡")
-
-if 'historial_df' not in st.session_state:
-    st.session_state.historial_df = cargar_db()
-
-# --- ESTILO CSS PERSONALIZADO (RESTORED BLUE/CYAN THEME) ---
-# Hemos modificado el CSS para usar el tono cian de tu foto en los acentos
+# --- ESTILO VISUAL INTEGRAL ---
 st.markdown("""
-<style>
-    /* Fondo negro Matrix */
-    .stApp { background-color: #000000; color: #00FF41; font-family: 'Courier New', monospace; }
-    
-    /* Acentos Cyan de tu foto original */
-    h1, h2, h3, h4 { color: #00FFFF !important; text-transform: uppercase; letter-spacing: 1px; }
-    
-    /* Paneles */
-    .stAlert { background-color: rgba(0, 20, 20, 0.7); border: 1px solid #00FFFF; color: #00FFFF; }
-    
-    /* Botones */
+    <style>
+    .stApp { background-color: #010801; color: #00FF41; font-family: 'Courier New', monospace; }
+    .stSelectbox, .stSlider { background-color: #051205; border-radius: 5px; padding: 10px; border: 1px solid #00FF41; }
     .stButton>button { 
-        border: 2px solid #00FFFF; background-color: #000; color: #00FFFF; 
-        font-weight: bold; text-transform: uppercase; border-radius: 0;
+        border: 2px solid #00FF41; background-color: #000; color: #00FF41; 
+        font-weight: bold; height: 3.5em; width: 100%; text-transform: uppercase; border-radius: 0;
     }
-    .stButton>button:hover { background-color: #00FFFF; color: #000; box-shadow: 0 0 20px #00FFFF; }
-    
-    /* Inputs */
-    .stSelectbox>div>div, .stSlider>div { background-color: #111; border: 1px solid #00FFFF; color: #00FFFF; }
-    [data-testid="stHeader"], [data-testid="stSidebar"], footer { visibility: hidden; }
-</style>
-""", unsafe_allow_html=True)
+    .stButton>button:hover { background-color: #00FF41; color: #000; box-shadow: 0 0 50px #00FF41; }
+    .detail-card { background-color: #051205; border: 1px solid #00FF41; padding: 20px; border-radius: 5px; height: 100%; }
+    .guide-box { background-color: #021a02; border-left: 4px solid #00FF41; padding: 10px; font-size: 0.8em; margin-bottom: 15px; }
+    .alert-active { color: #ff0000; animation: blink 1s infinite; font-weight: bold; font-size: 1.4em; text-align: center; border: 2px solid #ff0000; padding: 10px; }
+    @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.2; } 100% { opacity: 1; } }
+    [data-testid="stSidebar"] {display: none;}
+    </style>
+    """, unsafe_allow_html=True)
 
-# --- CATÁLOGO ESTELAR (NEXUS-7) ---
-objetivos_db = {
-    "Sagitario A*": {"cat": "Sgr A*", "dist": "26,000.0 AL", "retraso": "26,000.0 años", "emision": "Edad de Hielo", "info": "Centro galáctico. Agujero negro masivo."},
-    "Estrella de Tabby": {"cat": "KIC 8462852", "dist": "1,470.0 AL", "retraso": "1,470.0 años", "emision": "Año 556", "info": "¿Megaestructura extraterrestre?"},
-    "Próxima b": {"cat": "Alpha Cen Cb", "dist": "4.2 AL", "retraso": "4.2 años", "emision": "Hace 4 años", "info": "Planeta rocoso en zona habitable."},
-    "Cúmulo M13": {"cat": "NGC 6205", "dist": "25,000.0 AL", "retraso": "25,000.0 años", "emision": "Pre-historia", "info": "Objetivo del Mensaje de Arecibo."}
+# BASE DE DATOS MAESTRA (TODOS LOS DETALLES)
+info_objetivos = {
+    "Próxima b": {"Dist": "4.2 AL", "Tipo": "Rocoso / Habitable", "Retraso": "4.2 años", "Nota": "Vecino más cercano. Posible civilización Tipo I."},
+    "Ross 128 b": {"Dist": "11.0 AL", "Tipo": "Exoplaneta Templado", "Retraso": "11.0 años", "Nota": "Estrella enana roja muy estable. Señal limpia."},
+    "Gliese 581g": {"Dist": "20.0 AL", "Tipo": "Super-Tierra", "Retraso": "20.0 años", "Nota": "Primer candidato histórico a mundo habitable."},
+    "TRAPPIST-1e": {"Dist": "40.0 AL", "Tipo": "Sistema Multi-planetario", "Retraso": "40.0 años", "Nota": "7 planetas similares a la Tierra en órbita cerrada."},
+    "K2-18b": {"Dist": "124.0 AL", "Tipo": "Mundo Hicéano", "Retraso": "124.0 años", "Nota": "JWST detectó metano y vapor de agua aquí."},
+    "Estrella de Tabby": {"Dist": "1,470 AL", "Tipo": "Anomalía KIC 8462852", "Retraso": "1,470 años", "Nota": "Oscurecimientos masivos. ¿Enjambre de Dyson?"},
+    "Sector Wow!": {"Dist": "1,800 AL", "Tipo": "Histórico SETI", "Retraso": "1,800 años", "Nota": "Origen de la famosa señal captada en 1977."},
+    "Cúmulo M13": {"Dist": "25,000 AL", "Tipo": "Cúmulo Globular", "Retraso": "25,000 años", "Nota": "Contiene 300,000 estrellas. Alta densidad de objetivos."},
+    "Sagitario A*": {"Dist": "26,000 AL", "Tipo": "Agujero Negro Supermasivo", "Retraso": "26,000 años", "Nota": "Corazón de la Vía Láctea. Mucha radiación de fondo."},
+    "Andrómeda (M31)": {"Dist": "2.5M AL", "Tipo": "Galaxia Vecina", "Retraso": "2.5 Millones años", "Nota": "Búsqueda de civilizaciones Tipo III extragalácticas."}
 }
 
-st.title("📡 NEXUS-7 OMNIBUS: RESTORED BLUE Console v9.8")
+st.title("📡 NEXUS-7 OMNIBUS: FIRST CONTACT v7.5")
 
-# --- PANEL DE CONTROL ---
-ctrl_col, gap_col, tele_col = st.columns([1, 0.1, 1.4])
+# --- GUÍA RÁPIDA DE OPERADOR ---
+with st.expander("📖 MANUAL DE OPERACIONES SETI (PUNTO A)"):
+    st.markdown("""
+    <div class="guide-box">
+    <b>IDENTIFICACIÓN:</b><br>
+    - 🟢 <b>Línea fina vertical:</b> Señal artificial de banda estrecha (Contacto).<br>
+    - 🔵 <b>Manchas gruesas:</b> Ruido térmico o interferencia humana (RFI).<br>
+    - 📐 <b>Inclinación:</b> Deriva Doppler causada por el movimiento planetario.<br>
+    - ⚡ <b>Amplitud:</b> A mayor Ganancia, más definición del pico en el espectro.
+    </div>
+    """, unsafe_allow_html=True)
 
-with ctrl_col:
-    st.subheader("🧭 NAVEGACIÓN")
-    target_sel = st.selectbox("OBJETIVO", list(objetivos_db.keys()))
-    k_level = st.select_slider("ESCALA K", options=["Tipo I", "Tipo II", "Tipo III"], value="Tipo II")
-    gain_db = st.slider("GANANCIA SENSOR (dB)", 100, 500, 200)
-    btn_scan = st.button("🚀 INICIAR ESCANEO PROFUNDO")
+# --- PANEL DE CONTROL SUPERIOR ---
+c_ctrl, c_gain, c_tele = st.columns([1.5, 1.5, 3])
 
-with tele_col:
-    t = objetivos_db[target_sel]
-    # Usamos acentos cian aquí también
+with c_ctrl:
+    st.subheader("🎯 NAVEGACIÓN")
+    objetivo = st.selectbox("OBJETIVO", list(info_objetivos.keys()))
+    k_scale = st.select_slider("🌌 NIVEL KARDASHOV", options=["Tipo I", "Tipo II", "Tipo III"])
+
+with c_gain:
+    st.subheader("📶 ANTENA")
+    ganancia = st.slider("GANANCIA (dB)", 100, 500, 200)
+    audio = st.checkbox("🔊 AUDIO-MONITOR", value=True)
+    trigger = st.button("🚀 INICIAR ESCANEO PROFUNDO")
+
+with c_tele:
+    data = info_objetivos[objetivo]
     st.markdown(f"""
-    <div style="border: 2px solid #00FFFF; padding: 20px; background-color: rgba(0, 30, 30, 0.5);">
-        <h4 style="color: #00FFFF; margin-top: 0;">📊 TELEMETRÍA AUTOMÁTICA</h4>
-        <b>OBJETIVO:</b> {target_sel.upper()} | <b>CATÁLOGO:</b> {t['cat']}<br>
-        <b>DISTANCIA:</b> {t['dist']} | <b>RETRASO LUZ:</b> {t['retraso']}<br>
-        <b>LA LUZ QUE VES ES DE:</b> {t['emision']}<br>
-        <hr style="border: 0.5px solid #00FFFF;">
-        <b>INFO:</b> <i>{t['info']}</i>
+    <div class="detail-card">
+        <h3 style='margin:0; color:#00FF41;'>📊 TELEMETRÍA DE SECTOR</h3>
+        <p style='margin:5px 0;'><b>SISTEMA:</b> {objetivo.upper()} | <b>TIPO:</b> {data['Tipo']}</p>
+        <p style='margin:5px 0;'><b>DISTANCIA:</b> {data['Dist']} | <b>RETRASO:</b> {data['Retraso']}</p>
+        <hr style='border:0.5px solid #1a3a1a;'>
+        <p style='margin:0; font-size:0.9em; color:#888;'><i>{data['Nota']}</i></p>
     </div>
     """, unsafe_allow_html=True)
 
 st.write("---")
 
-# --- ÁREA DE VISUALIZACIÓN DE CAMPO (RADAR + IA) ---
-radar_col, ia_col = st.columns([2, 1])
+# --- ÁREA DE TRABAJO ---
+col_radar, col_decoder = st.columns([2, 1])
 
-with radar_col:
-    st.subheader("🛰️ ESPECTROGRAMA DE CAMPO")
-    v_water = st.empty() # Contenedor para el gráfico de cascada
-    v_spec = st.empty()  # Contenedor para el gráfico de picos
+with col_radar:
+    st.write("🛰️ **VISUALIZACIÓN DE ESPECTRO**")
+    v_cascada = st.empty()
+    v_potencia = st.empty()
 
-with ia_col:
-    st.subheader("📟 ANÁLISIS IA")
-    v_alert = st.empty()
-    v_log = st.empty()
+with col_decoder:
+    st.subheader("📟 DECODER IA")
+    v_alerta = st.empty()
+    v_terminal = st.empty()
+    v_matrix = st.empty()
 
-# --- LÓGICA DE ESCANEO SETI ---
-if btn_scan:
-    # 1. Preparar datos (simulación)
-    data_radar = np.random.rand(40, 100)
-    is_hit = random.random() > 0.4
+# LÓGICA DE ESCANEO
+if trigger:
+    pasos = 100
+    matriz = np.zeros((pasos, 400))
+    pos_x = random.randint(150, 250)
     
-    # 2. Simulación de IA analizando frecuencias
-    log_messages = [
-        "Ajustando parábola...", "Filtrando ruidos de púlsares...", 
-        "Analizando línea de hidrógeno...", "Buscando patrones binarios...",
-        "Calculando Doppler..."
-    ]
+    # Probabilidad según Kardashev (Más fácil detectar Tipo III)
+    prob_map = {"Tipo I": 0.8, "Tipo II": 0.5, "Tipo III": 0.2}
+    es_alien = random.random() > prob_map[k_scale]
+    
+    # Audio inicial
+    if audio: st.components.v1.html("<script>new Audio('https://www.soundjay.com/misc/sounds/white-noise-01.mp3').play();</script>", height=0)
 
-    # 3. Bucle de renderizado dinámico (Simulando tiempo real)
-    for i in range(60):
-        # Generar ruido de fondo
-        frame = np.random.rand(100)
+    for t in range(pasos):
+        ruido = np.random.normal(0.5, 0.2, 400)
+        centro = int(pos_x + t * 0.06)
         
-        # Insertar señal artificial si hay "Éxito"
-        if is_hit: frame[50] += (gain_db / 150)
+        if 0 <= centro < 400:
+            if es_alien:
+                # SEÑAL ALIEN (Banda estrecha)
+                ruido[centro] += (ganancia / 4.5)
+            else:
+                # RFI (Banda ancha)
+                ruido[centro-8:centro+9] += (ganancia / 15)
+            
+        matriz[t] = ruido
         
-        # Desplazar la cascada hacia arriba
-        data_radar = np.roll(data_radar, -1, axis=0)
-        data_radar[-1] = frame
+        # Render Waterfall
+        fig1, ax1 = plt.subplots(figsize=(10, 4), facecolor='black')
+        ax1.imshow(matriz, aspect='auto', cmap='magma' if es_alien else 'viridis', origin='lower')
+        ax1.axis('off')
+        v_cascada.pyplot(fig1)
+        plt.close(fig1)
         
-        # --- EL CAMBIO CRÍTICO: cmap='cool' para el tono cian original ---
-        # 4. Renderizar Gráfico de Cascada (Waterfall)
-        fig_w, ax_w = plt.subplots(figsize=(10, 5), facecolor='black')
-        # cmap='cool' replica el color azul/cian eléctrico de tu foto
-        ax_w.imshow(data_radar, aspect='auto', cmap='cool', vmin=0, vmax=1.8)
-        ax_w.axis('off') # Consola limpia
-        v_water.pyplot(fig_w)
-        plt.close(fig_w)
+        # Render Potencia
+        fig2, ax2 = plt.subplots(figsize=(10, 2), facecolor='black')
+        ax2.plot(ruido, color='#00FF41' if not es_alien else '#ff0000', linewidth=1)
+        ax2.set_facecolor('black')
+        ax2.set_ylim(0, 150)
+        ax2.axis('off')
+        v_potencia.pyplot(fig2)
+        plt.close(fig2)
         
-        # 5. Renderizar Gráfico de Picos (Spectrum)
-        fig_s, ax_s = plt.subplots(figsize=(10, 1), facecolor='black')
-        ax_s.plot(frame, color='#00FFFF' if not is_hit else '#FF3131') # Cian o Rojo SETI
-        ax_s.set_facecolor('black')
-        ax_s.set_ylim(0, 3)
-        ax_s.axis('off')
-        v_spec.pyplot(fig_s)
-        plt.close(fig_s)
-        
-        # 6. Actualizar Log de IA
-        v_log.code(f"PROGRESO: {i*1.6:.1f}%\nINTENSIDAD: {np.max(frame):.2f} Jy\nESTADO: {random.choice(log_messages)}")
-        time.sleep(0.05)
+        v_terminal.code(f"SCANNING: {objetivo}\nGANANCIA: {ganancia} dB\nPROCESANDO TRAMA: {t}%\nCOHERENCIA: {'DETECTADA' if es_alien and t > 50 else 'BUSCANDO...'}")
+        time.sleep(0.01)
 
-    # 4. Resultado final
-    if is_hit:
-        st.balloons()
-        v_alert.success(f"⚠️ ¡ALERTA SETI! CONTACTO COHERENTE CONFIRMADO EN {target_sel.upper()}")
-        # Guardar en Base de Datos
-        new_row = pd.DataFrame([{"Hora": datetime.now().strftime("%H:%M"), "Lugar": target_sel, "Escala K": k_level, "Result": "ÉXITO"}])
-        st.session_state.historial_df = pd.concat([st.session_state.historial_df, new_row], ignore_index=True)
-        st.session_state.historial_df.to_csv(DB_FILE, index=False)
+    # FINAL DE ESCANEO
+    if es_alien:
+        if audio: st.components.v1.html("<script>new Audio('https://www.soundjay.com/buttons/beep-01a.mp3').play();</script>", height=0)
+        v_alerta.markdown('<p class="alert-active">⚠️ ALERTA: CONTACTO INTELIGENTE ⚠️</p>', unsafe_allow_html=True)
+        
+        # Generar matriz binaria (Decodificación)
+        msg = np.random.choice([0, 1], size=(8, 8))
+        v_matrix.write("🔢 MATRIZ BINARIA DECODIFICADA:")
+        v_matrix.table(msg)
+        
+        st.session_state.historial.append({"Hora": datetime.now().strftime("%H:%M"), "Lugar": objetivo, "K-Scale": k_scale, "Result": "ÉXITO"})
     else:
-        v_alert.error("FIN DE ESCANEO. Solo ruido de fondo detectado.")
+        v_alerta.error("SCAN COMPLETO: Sin patrones de inteligencia.")
 
-# --- HISTORIAL DE DESCUBRIMIENTOS ---
-st.write("---")
-st.subheader("📂 ARCHIVO DE CIVILIZACIONES (EVIDENCIA B)")
-if len(st.session_state.historial_df) > 0:
-    st.dataframe(st.session_state.historial_df, use_container_width=True)
-else:
-    st.info("No hay registros en la base de datos.")
+# HISTORIAL
+if st.session_state.historial:
+    st.divider()
+    st.subheader("📂 ARCHIVO DE CIVILIZACIONES")
+    st.table(st.session_state.historial)
