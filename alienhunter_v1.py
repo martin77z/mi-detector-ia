@@ -12,6 +12,7 @@ st.set_page_config(page_title="NEXUS-7 CONTACT", page_icon="👽", layout="wide"
 if 'historial' not in st.session_state:
     st.session_state['historial'] = []
 
+# ESTILO VISUAL
 st.markdown("""
     <style>
     .stApp { background-color: #020502; color: #00FF41; font-family: 'Courier New', monospace; }
@@ -33,7 +34,7 @@ info_objetivos = {
     "Cúmulo M13": {"Dist": 25000.0, "Tipo": "Cúmulo Estelar", "Nota": "300.000 estrellas emitiendo."}
 }
 
-st.title("📡 NEXUS-7: FIRST CONTACT v5.7")
+st.title("📡 NEXUS-7: FIRST CONTACT v5.7.1")
 
 # --- SIDEBAR ---
 st.sidebar.title("🎛️ PANEL DE CONTROL")
@@ -55,7 +56,7 @@ col_radar, col_log = st.columns([2, 1])
 
 with col_radar:
     v_cascada = st.empty()
-    v_potencia = st.empty()
+    v_potencia = st.empty() # Marcador reservado para evitar NameError
 
 with col_log:
     st.subheader("📟 STATUS LOG")
@@ -67,55 +68,53 @@ if st.button("🚀 INICIAR ESCANEO DE BANDA ESTRECHA"):
     matriz = np.zeros((pasos, 400))
     pos_x = random.randint(150, 250)
     
-    # PROBABILIDAD DE ÉXITO AJUSTADA (v5.7)
-    es_alien = random.random() > 0.4 # 60% DE ÉXITO
+    # PROBABILIDAD DE ÉXITO (60%)
+    es_alien = random.random() > 0.4 
     
     for t in range(pasos):
         ruido = np.random.normal(0.5, 0.2, 400)
-        # Efecto Doppler: La señal se inclina sutilmente
         centro = int(pos_x + t * 0.08)
         
         if 0 <= centro < 400:
             if es_alien:
-                # SEÑAL ALIEN: Fina (1px) y Muy Potente
+                # SEÑAL ALIEN: Banda Estrecha Pura
                 intensidad = ganancia / 6
                 ruido[centro] += intensidad
             else:
-                # INTERFERENCIA: Gorda (12px) y menos intensa
+                # INTERFERENCIA: Banda Ancha
                 intensidad = ganancia / 12
                 ruido[centro-6:centro+7] += intensidad
             
         matriz[t] = ruido
         
-        # Render Cascada (Magma para Alien, Viridis para RFI)
+        # 1. Render Cascada
         fig1, ax1 = plt.subplots(figsize=(10, 5), facecolor='black')
         ax1.imshow(matriz, aspect='auto', cmap='magma' if es_alien else 'viridis', origin='lower')
         ax1.axis('off')
         v_cascada.pyplot(fig1)
         plt.close(fig1)
         
-        # Render Potencia
+        # 2. Render Potencia (CORREGIDO)
         fig2, ax2 = plt.subplots(figsize=(10, 2), facecolor='black')
         ax2.plot(ruido, color='#00FF41', linewidth=1)
         ax2.set_facecolor('black')
-        ax2.set_ylim(0, 40) # Techo más alto para ver el pico
+        ax2.set_ylim(0, 45) 
         ax2.axis('off')
-        v_power.pyplot(fig2)
+        v_potencia.pyplot(fig2) # Ahora fig2 siempre existe aquí
         plt.close(fig2)
         
-        v_terminal.code(f"MUESTRA: {t}/{pasos}\nSNR: {np.max(ruido):.1f}\nANALIZANDO PATRONES...")
+        v_terminal.code(f"MUESTRA: {t}/{pasos}\nSNR: {np.max(ruido):.1f}\nANALIZANDO...")
         time.sleep(0.01)
 
-    # RESULTADO
-    with v_resultado:
-        if es_alien:
-            st.success("🎯 ¡TECNOSÍGNAL DETECTADA!")
-            st.write(f"Señal de banda estrecha pura en {objetivo}. No hay proceso natural conocido que emita en este ancho de banda.")
-            if st.button("💾 GUARDAR CONTACTO"):
-                st.session_state.historial.append({"Fecha": datetime.now().strftime("%H:%M"), "Lugar": objetivo, "Tipo": "INTELIGENTE"})
-        else:
-            st.error("❌ INTERFERENCIA DETECTADA")
-            st.write("La señal es demasiado ancha. Clasificada como ruido térmico o satélite terrestre.")
+    # RESULTADO FINAL
+    if es_alien:
+        v_resultado.success("🎯 ¡TECNOSÍGNAL DETECTADA!")
+        v_resultado.write(f"Coherencia artificial confirmada en {objetivo}.")
+        if st.button("💾 GUARDAR CONTACTO"):
+            st.session_state.historial.append({"Fecha": datetime.now().strftime("%H:%M"), "Lugar": objetivo, "Tipo": "INTELIGENTE"})
+    else:
+        v_resultado.error("❌ INTERFERENCIA DETECTADA")
+        v_resultado.write("Señal demasiado ancha. Clasificada como RFI.")
 
 # HISTORIAL
 if st.session_state.historial:
