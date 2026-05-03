@@ -4,91 +4,109 @@ import matplotlib.pyplot as plt
 import time
 import random
 
-st.set_page_config(page_title="Alien Hunter IA", page_icon="📡", layout="wide")
+# Configuración de página con estilo oscuro inyectado
+st.set_page_config(page_title="DEEP SPACE RADAR", page_icon="📡", layout="wide")
 
-# Estilo personalizado
 st.markdown("""
     <style>
-    .reportview-container { background: #0e1117; }
-    .stButton>button { width: 100%; border-radius: 20px; height: 3em; background-color: #2e7bcf; color: white; }
+    /* Estética General */
+    .main { background-color: #000000; }
+    .stApp { background-color: #000000; color: #00FF41; font-family: 'Courier New', Courier, monospace; }
+    
+    /* Botón Táctico */
+    .stButton>button {
+        border: 2px solid #00FF41;
+        background-color: #000000;
+        color: #00FF41;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        transition: all 0.3s;
+    }
+    .stButton>button:hover {
+        background-color: #00FF41;
+        color: #000000;
+        box-shadow: 0 0 15px #00FF41;
+    }
+    
+    /* Paneles */
+    .stMetric { border: 1px solid #333; padding: 15px; border-radius: 10px; }
     </style>
     """, unsafe_allow_html=True)
 
-st.title("📡 Detector de Tecnofirmas IA v2.0")
+# --- HEADER ---
+st.title("📟 NEXUS-7: DEEP SPACE ANALYZER")
+st.write("---")
 
-# --- Barra Lateral ---
-st.sidebar.header("🕹️ Control de Misión")
+# --- SIDEBAR PROFESIONAL ---
+st.sidebar.header("📡 CONFIGURACIÓN DEL ARRECHO")
 objetivos = {
-    "Próxima Centauri b": "4.2 años luz",
-    "Estrella de Tabby": "1,470 años luz",
-    "TRAPPIST-1e": "40 años luz",
-    "Kepler-186f": "582 años luz",
-    "Centro Galáctico (Sagitario A*)": "26,000 años luz"
+    "Próxima b": "4.2 LY",
+    "KIC 8462852 (Tabby)": "1470 LY",
+    "TRAPPIST-1e": "40 LY",
+    "Sagittarius A*": "26k LY"
 }
-target = st.sidebar.selectbox("Objetivo de Escaneo", list(objetivos.keys()))
-sensibilidad = st.sidebar.slider("Sensibilidad del Sensor", 10, 100, 45)
+target = st.sidebar.selectbox("Fijar Objetivo", list(objetivos.keys()))
+gain = st.sidebar.slider("Ganancia de Antena (dB)", 0, 100, 75)
 
-st.sidebar.info(f"**Destino:** {target}\n\n**Distancia:** {objetivos[target]}")
+st.sidebar.markdown(f"""
+---
+**COORDINADAS:** FIJADAS  
+**ESTADO:** LISTO PARA ESCANEO  
+**DISTANCIA:** {objetivos[target]}
+""")
 
-# --- Espacio de Trabajo ---
-st.write(f"### 🔭 Apuntando Antenas hacia: **{target}**")
-grafico_placeholder = st.empty()
-status_placeholder = st.empty()
+# --- PANTALLA PRINCIPAL ---
+col_main, col_data = st.columns([2, 1])
 
-if st.button("🚀 INICIAR ESCANEO EN TIEMPO REAL"):
-    t_steps = 60  # Segundos de escaneo
-    f_chans = 500
-    
-    # Creamos una matriz vacía que iremos rellenando
+with col_main:
+    st.write(f"### [ SECTOR: {target.upper()} ]")
+    view = st.empty()
+    progress_bar = st.empty()
+
+with col_data:
+    st.write("### 📜 TELEMETRÍA")
+    log = st.empty()
+    stats = st.empty()
+
+if st.button("EJECUTAR ESCANEO DE BANDA ESTRECHA"):
+    t_steps = 80
+    f_chans = 400
     display_data = np.zeros((t_steps, f_chans))
     
-    # Parámetros de la señal oculta
-    start_chan = random.randint(100, 400)
-    drift = random.uniform(-0.8, 0.8)
-    
+    # Parámetros de señal
+    start_chan = random.randint(100, 300)
+    drift = random.uniform(-0.5, 0.5)
+
     for t in range(t_steps):
-        # 1. Generar ruido de fondo para esta línea
-        linea_ruido = np.random.exponential(scale=1.0, size=f_chans)
-        
-        # 2. Inyectar señal (Tecnofirma)
+        # Generar línea
+        noise = np.random.normal(0.5, 0.2, f_chans)
         center = int(start_chan + t * drift)
-        lanes = np.arange(f_chans)
-        señal = (sensibilidad / 10) * np.exp(-((lanes - center)**2) / (2 * 2**2))
+        signal = (gain/10) * np.exp(-((np.arange(f_chans) - center)**2) / 4)
         
-        # 3. Actualizar matriz de datos
-        display_data[t] = linea_ruido + señal
+        display_data[t] = noise + signal
         
-        # 4. Dibujar dinámicamente
-        fig, ax = plt.subplots(figsize=(10, 5))
+        # Renderizado Táctico
+        fig, ax = plt.subplots(figsize=(8, 5), facecolor='black')
         ax.imshow(display_data, aspect='auto', cmap='magma', origin='lower')
-        ax.set_title(f"DATOS EN VIVO: {target}")
-        ax.set_xlabel("Frecuencia (MHz)")
-        ax.set_ylabel("Tiempo de Integración (s)")
+        ax.axis('off') # Eliminar ejes para modo "radar"
+        view.pyplot(fig)
+        plt.close(fig)
         
-        grafico_placeholder.pyplot(fig)
-        plt.close(fig) # Limpiar memoria
-        
-        status_placeholder.text(f"🛰️ Recibiendo paquetes de datos... Segundo {t+1}/60")
-        time.sleep(0.05) # Velocidad del escaneo
+        progress_bar.progress((t + 1) / t_steps)
+        log.code(f"DAT_STREAM: {random.random()}\nFREQ_LOCK: {center}MHz\nSIG_STRENGTH: {np.max(signal):.2f}")
+        time.sleep(0.03)
 
-    # --- ANALIZADOR DE IA AL FINAL ---
-    st.divider()
-    st.subheader("🧠 Análisis de Inteligencia Artificial")
+    # --- INFORME FINAL ---
+    st.write("---")
+    res1, res2, res3 = st.columns(3)
     
-    col1, col2 = st.columns(2)
+    score = random.randint(85, 99) if gain > 50 else random.randint(10, 40)
     
-    with col1:
-        prob = random.randint(75, 99) if sensibilidad > 30 else random.randint(20, 50)
-        st.metric("Probabilidad de Origen Artificial", f"{prob}%")
-        st.progress(prob / 100)
-
-    with col2:
-        if prob > 70:
-            st.success("✅ VEREDICTO: TECNOFIRMA DETECTADA")
-            st.write("**Tipo de Señal:** Banda estrecha con deriva Doppler coherente.")
-            st.write("**Clasificación:** Posible civilización Kardashev Tipo I.")
-        else:
-            st.warning("⚠️ VEREDICTO: RUIDO CÓSMICO")
-            st.write("La señal no presenta patrones de modulación inteligente claros.")
-
-    st.balloons()
+    res1.metric("CONFIDENCIALIDAD", f"{score}%")
+    res2.metric("TIPO", "BANDA ESTRECHA" if score > 70 else "RUIDO")
+    res3.write(f"**VEREDICTO IA:** {'ALERTA DE TECNOFIRMA' if score > 70 else 'SQUELCH ACTIVO'}")
+    
+    if score > 70:
+        st.success(f"¡Atención! Patrón detectado en {target}. La señal muestra coherencia artificial.")
+        st.balloons()
