@@ -1,16 +1,16 @@
 import streamlit as st
+import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
+import os
 import time
 import random
-import pandas as pd
+import matplotlib.pyplot as plt
 from datetime import datetime
-import os
 
-# 1. BASE DE DATOS FÍSICA
+# --- 1. GESTIÓN DE BASE DE DATOS PERMANENTE ---
 DB_FILE = "registro_civilizaciones.csv"
 
-def cargar_datos_seguros():
+def cargar_db():
     if os.path.exists(DB_FILE):
         try:
             return pd.read_csv(DB_FILE)
@@ -18,121 +18,152 @@ def cargar_datos_seguros():
             return pd.DataFrame(columns=["Hora", "Lugar", "K-Scale", "Result"])
     return pd.DataFrame(columns=["Hora", "Lugar", "K-Scale", "Result"])
 
-# 2. CONFIGURACIÓN DE INTERFAZ
-st.set_page_config(page_title="NEXUS-7 OMNIBUS v8.3", page_icon="📡", layout="wide")
+# --- 2. CONFIGURACIÓN DE INTERFAZ ---
+st.set_page_config(page_title="NEXUS-7 FINAL BUILD", layout="wide", page_icon="📡")
 
 if 'historial_df' not in st.session_state:
-    st.session_state.historial_df = cargar_datos_seguros()
+    st.session_state.historial_df = cargar_db()
 
+# CSS Personalizado (Fiel a la estética de tus fotos)
 st.markdown("""
     <style>
-    .stApp { background-color: #010801; color: #00FF41; font-family: 'Courier New', monospace; }
-    .detail-card { background-color: #051205; border: 1px solid #00FF41; padding: 20px; border-radius: 5px; height: 100%; }
-    .stButton>button { border: 2px solid #00FF41; background-color: #000; color: #00FF41; font-weight: bold; width: 100%; }
-    .alert-active { color: #ff0000; animation: blink 1s infinite; font-weight: bold; text-align: center; border: 2px solid #ff0000; padding: 10px; }
-    @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.2; } 100% { opacity: 1; } }
+    .stApp { background-color: #010a01; color: #00FF41; font-family: 'Courier New', monospace; }
+    .telemetria-card { 
+        border: 1px solid #00FF41; padding: 15px; border-radius: 5px; 
+        background-color: rgba(0, 255, 65, 0.05);
+    }
+    .stButton>button { 
+        border: 2px solid #00FF41; background-color: #000; color: #00FF41; 
+        font-weight: bold; width: 100%; transition: 0.3s;
+    }
+    .stButton>button:hover { background-color: #00FF41; color: #000; box-shadow: 0 0 20px #00FF41; }
+    [data-testid="stSidebar"] {display: none;}
     </style>
     """, unsafe_allow_html=True)
 
-# 3. RECUPERACIÓN DE TODOS LOS OBJETIVOS
-info_objetivos = {
-    "Próxima b": {"Dist": "4.2 AL", "Tipo": "Rocoso / Habitable", "Retraso": "4.2 años", "Nota": "Candidato cercano."},
-    "Ross 128 b": {"Dist": "11.0 AL", "Tipo": "Exoplaneta Templado", "Retraso": "11.0 años", "Nota": "Estrella estable."},
-    "Gliese 581g": {"Dist": "20.0 AL", "Tipo": "Super-Tierra", "Retraso": "20.0 años", "Nota": "Zona habitable."},
-    "TRAPPIST-1e": {"Dist": "40.0 AL", "Tipo": "Sistema Multi-planetario", "Retraso": "40.0 años", "Nota": "7 planetas similares."},
-    "K2-18b": {"Dist": "124.0 AL", "Tipo": "Mundo Hicéano", "Retraso": "124.0 años", "Nota": "Vapor de agua detectado."},
-    "Estrella de Tabby": {"Dist": "1,470 AL", "Tipo": "Anomalía KIC 8462852", "Retraso": "1,470 años", "Nota": "¿Enjambre de Dyson?"},
-    "Sector Wow!": {"Dist": "1,800 AL", "Tipo": "Histórico SETI", "Retraso": "1,800 años", "Nota": "Señal de 1977."},
-    "Cúmulo M13": {"Dist": "25,000 AL", "Tipo": "Cúmulo Globular", "Retraso": "25,000 años", "Nota": "300,000 estrellas."},
-    "Sagitario A*": {"Dist": "26,000 AL", "Tipo": "Agujero Negro", "Retraso": "26,000 años", "Nota": "Centro Galáctico."},
-    "Andrómeda (M31)": {"Dist": "2.5M AL", "Tipo": "Galaxia Vecina", "Retraso": "2.5M años", "Nota": "Civilizaciones Tipo III."}
+# --- 3. DATOS DE NAVEGACIÓN ---
+objetivos_db = {
+    "Estrella de Tabby": {"cat": "KIC 8462852", "dist": "1,470.0 AL", "retraso": "1,470.0 años", "emision": "Año 556", "info": "Anomalía de oscurecimiento masivo."},
+    "Próxima b": {"cat": "Alpha Cen Cb", "dist": "4.2 AL", "retraso": "4.2 años", "emision": "Hace 4 años", "info": "Planeta rocoso en zona habitable."},
+    "Cúmulo M13": {"cat": "NGC 6205", "dist": "25,000.0 AL", "retraso": "25,000.0 años", "emision": "Pre-historia", "info": "Objetivo del Mensaje de Arecibo."},
+    "Andrómeda": {"cat": "M31", "dist": "2.5M AL", "retraso": "2.5M años", "emision": "Plioceno", "info": "Civilizaciones extragalácticas potenciales."}
 }
 
-st.title("📡 NEXUS-7 OMNIBUS: FULL NAVIGATION v8.3")
+st.title("📡 NEXUS-7 OMNIBUS: FIRST CONTACT v8.9")
 
-# 4. PANEL DE CONTROL
+# --- 4. PANELES DE CONTROL ---
 c1, c2, c3 = st.columns([1.5, 1.5, 3])
 
 with c1:
-    st.subheader("🎯 NAVEGACIÓN")
-    objetivo = st.selectbox("DESTINO", list(info_objetivos.keys()))
-    k_scale = st.select_slider("🌌 ESCALA KARDASHOV", options=["Tipo I", "Tipo II", "Tipo III"])
+    st.subheader("🧭 NAVEGACIÓN")
+    obj_sel = st.selectbox("OBJETIVO", list(objetivos_db.keys()))
+    k_scale = st.select_slider("ESCALA KARDASHOV", options=["Tipo I", "Tipo II", "Tipo III"])
 
 with c2:
     st.subheader("📶 ANTENA")
-    ganancia = st.slider("GANANCIA (dB)", 100, 500, 250)
-    trigger = st.button("🚀 INICIAR ESCANEO PROFUNDO")
+    gain = st.slider("GANANCIA (dB)", 100, 500, 250)
+    btn_scan = st.button("🚀 INICIAR ESCANEO PROFUNDO")
 
 with c3:
-    data = info_objetivos[objetivo]
+    target = objetivos_db[obj_sel]
     st.markdown(f"""
-    <div class="detail-card">
-        <h3 style='margin:0; color:#00FF41;'>📊 TELEMETRÍA AUTOMÁTICA</h3>
-        <p><b>SISTEMA:</b> {objetivo} | <b>DISTANCIA:</b> {data['Dist']}</p>
-        <p><b>RETRASO LUZ:</b> {data['Retraso']} | <b>NOTA:</b> {data['Nota']}</p>
+    <div class="telemetria-card">
+        <h4 style='margin-top:0;'>📊 TELEMETRÍA AUTOMÁTICA</h4>
+        <b>SISTEMA:</b> {obj_sel.upper()} | <b>CATÁLOGO:</b> {target['cat']}<br>
+        <b>DISTANCIA:</b> {target['dist']} | <b>RETRASO LUZ:</b> {target['retraso']}<br>
+        <b>ORIGEN ESTIMADO:</b> {target['emision']}<br>
+        <hr style='border:0.5px solid #00FF41'>
+        <i>{target['info']}</i>
     </div>
     """, unsafe_allow_html=True)
 
-# 5. ÁREA DE TRABAJO
-v_cascada = st.empty()
-v_potencia = st.empty()
-v_alerta = st.empty()
-v_matrix = st.empty()
+st.write("---")
 
-if trigger:
-    pasos = 100
-    matriz = np.zeros((pasos, 400))
-    pos_x = random.randint(150, 250)
-    # Probabilidad ajustada por Kardashov
-    es_alien = random.random() > (0.7 if k_scale == "Tipo I" else 0.4 if k_scale == "Tipo II" else 0.2)
+# --- 5. VISUALIZACIÓN Y ANÁLISIS IA ---
+col_radar, col_ia = st.columns([2, 1])
+
+with col_radar:
+    st.write("🛰️ **VISUALIZACIÓN DE ESPECTRO**")
+    v_waterfall = st.empty()
+    v_spectrum = st.empty()
+
+with col_ia:
+    st.subheader("📟 DECODER IA")
+    v_status = st.empty()
+    v_log = st.empty()
+    v_data = st.empty()
+
+# --- 6. LÓGICA DE EJECUCIÓN ---
+if btn_scan:
+    steps = 60
+    rows = 40
+    data_stream = np.zeros((rows, 100))
+    # Probabilidad de éxito según Kardashov
+    chance = {"Tipo I": 0.8, "Tipo II": 0.5, "Tipo III": 0.3}
+    is_alien = random.random() > chance[k_scale]
     
-    for t in range(pasos):
-        ruido = np.random.normal(0.5, 0.2, 400)
-        centro = int(pos_x + t * 0.05)
-        if 0 <= centro < 400:
-            if es_alien:
-                ruido[centro] += (ganancia / 4.5)
-            else:
-                ruido[centro-5:centro+6] += (ganancia / 18)
+    for i in range(steps):
+        # Generar ruido y señal
+        new_row = np.random.normal(0.5, 0.2, 100)
+        if is_alien:
+            new_row[50] += (gain / 8) # Pico de señal artificial
         
-        matriz[t] = ruido
+        data_stream = np.roll(data_stream, -1, axis=0)
+        data_stream[-1] = new_row
         
-        fig1, ax1 = plt.subplots(figsize=(10, 3), facecolor='black')
-        ax1.imshow(matriz, aspect='auto', cmap='magma' if es_alien else 'viridis', origin='lower')
-        ax1.axis('off')
-        v_cascada.pyplot(fig1)
-        plt.close(fig1)
+        # Waterfall Plot
+        fig, ax = plt.subplots(figsize=(10, 4), facecolor='black')
+        ax.imshow(data_stream, aspect='auto', cmap='magma' if is_alien else 'viridis')
+        ax.axis('off')
+        v_waterfall.pyplot(fig)
+        plt.close(fig)
         
+        # Spectrum Plot
         fig2, ax2 = plt.subplots(figsize=(10, 1.5), facecolor='black')
-        ax2.plot(ruido, color='#00FF41' if not es_alien else '#ff0000')
+        ax2.plot(new_row, color='#00FF41' if not is_alien else '#ff0000')
         ax2.set_facecolor('black')
-        ax2.set_ylim(0, 150)
+        ax2.set_ylim(0, 100)
         ax2.axis('off')
-        v_potencia.pyplot(fig2)
+        v_spectrum.pyplot(fig2)
         plt.close(fig2)
-        time.sleep(0.01)
+        
+        # ANÁLISIS IA (Restaurado)
+        v_log.code(f"""
+        [ANALYSIS_MODE]: ACTIVE
+        [SAMPLE]: {i}/{steps}
+        [SNR_RATIO]: {np.max(new_row):.2f}
+        [COHERENCE]: {'HIGH' if is_alien and i > 15 else 'SEARCHING...'}
+        [K-TYPE]: {k_scale}
+        """)
+        time.sleep(0.05)
 
-    if es_alien:
-        v_alerta.markdown('<p class="alert-active">⚠️ CONTACTO CONFIRMADO ⚠️</p>', unsafe_allow_html=True)
-        # GUARDADO PERMANENTE
-        nueva_fila = pd.DataFrame([{"Hora": datetime.now().strftime("%H:%M"), "Lugar": objetivo, "K-Scale": k_scale, "Result": "ÉXITO"}])
-        st.session_state.historial_df = pd.concat([st.session_state.historial_df, nueva_fila], ignore_index=True)
+    if is_alien:
+        v_status.success("⚠️ CONTACTO INTELIGENTE CONFIRMADO")
+        # Guardar éxito en el archivo (Persistencia)
+        new_entry = pd.DataFrame([{
+            "Hora": datetime.now().strftime("%H:%M"),
+            "Lugar": obj_sel,
+            "K-Scale": k_scale,
+            "Result": "ÉXITO"
+        }])
+        st.session_state.historial_df = pd.concat([st.session_state.historial_df, new_entry], ignore_index=True)
         st.session_state.historial_df.to_csv(DB_FILE, index=False)
         
-        msg = np.random.choice([0, 1], size=(8, 8))
-        v_matrix.write("🔢 MATRIZ BINARIA RECUPERADA:")
-        v_matrix.table(msg)
+        # Mostrar matriz binaria
+        v_data.table(np.random.choice([0, 1], size=(5, 10)))
     else:
-        v_alerta.error("SCAN COMPLETO: Ruido cósmico detectado.")
+        v_status.error("SCAN COMPLETO: RUIDO TÉRMICO")
 
-# 6. ARCHIVO DE CIVILIZACIONES (PERSISTENTE)
+# --- 7. ARCHIVO DE CIVILIZACIONES (CONSULTA) ---
 st.write("---")
-st.subheader("📂 ARCHIVO DE CIVILIZACIONES")
+st.subheader("📂 ARCHIVO DE CIVILIZACIONES (REGISTRO)")
 
-# Comprobación segura
+# Verificación de seguridad para evitar el errorAttributeError
 if len(st.session_state.historial_df) > 0:
-    st.table(st.session_state.historial_df)
-    csv = st.session_state.historial_df.to_csv(index=False).encode('utf-8')
-    st.download_button("📥 Descargar Archivo", csv, "nexus7_log.csv", "text/csv")
+    st.dataframe(st.session_state.historial_df, use_container_width=True)
+    if st.button("🗑️ Resetear Archivo"):
+        if os.path.exists(DB_FILE): os.remove(DB_FILE)
+        st.session_state.historial_df = pd.DataFrame(columns=["Hora", "Lugar", "K-Scale", "Result"])
+        st.rerun()
 else:
-    st.info("Inicie escaneo para registrar hallazgos.")
+    st.info("No se han registrado hallazgos en la base de datos local.")
