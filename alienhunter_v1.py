@@ -1,128 +1,152 @@
 import streamlit as st
+import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
+import os
 import time
 import random
-import pandas as pd
+import matplotlib.pyplot as plt
 from datetime import datetime
 
-# CONFIGURACIÓN NEXUS-7 ULTIMATE v7.1
-st.set_page_config(page_title="NEXUS-7 ULTIMATE v7.1", page_icon="📡", layout="wide")
+# --- 1. CONFIGURACIÓN E HISTORIAL ---
+DB_FILE = "registro_civilizaciones.csv"
+def cargar_db():
+    if os.path.exists(DB_FILE):
+        try: return pd.read_csv(DB_FILE)
+        except: return pd.DataFrame(columns=["Hora", "Lugar", "Escala K", "Result", "Frecuencia"])
+    return pd.DataFrame(columns=["Hora", "Lugar", "Escala K", "Result", "Frecuencia"])
 
-if 'historial' not in st.session_state:
-    st.session_state['historial'] = []
+st.set_page_config(page_title="NEXUS-7 MASTER v14.0", layout="wide")
+if 'historial_df' not in st.session_state:
+    st.session_state.historial_df = cargar_db()
 
-# --- ESTILO VISUAL ---
+# --- 2. ESTILO VISUAL (EL CIAN ELÉCTRICO ORIGINAL) ---
 st.markdown("""
-    <style>
-    .stApp { background-color: #010a01; color: #00FF41; font-family: 'Courier New', monospace; }
-    .stSelectbox, .stSlider { background-color: #051505; border-radius: 5px; padding: 10px; border: 1px solid #00FF41; }
-    .stButton>button { 
-        border: 2px solid #00FF41; background-color: #000; color: #00FF41; 
-        font-weight: bold; height: 3.5em; width: 100%; text-transform: uppercase;
+<style>
+    .stApp { background-color: #000000; color: #00FF41; font-family: 'Courier New', monospace; }
+    .telemetria-card { 
+        border: 2px solid #00FF41; 
+        padding: 20px; 
+        background: rgba(0, 30, 30, 0.4); 
+        border-radius: 10px; 
+        box-shadow: 0 0 10px rgba(0, 255, 65, 0.2);
     }
-    .stButton>button:hover { background-color: #00FF41; color: #000; box-shadow: 0 0 50px #00FF41; }
-    .detail-card { background-color: #051505; border: 1px solid #00FF41; padding: 20px; border-radius: 5px; }
-    [data-testid="stSidebar"] {display: none;}
-    </style>
-    """, unsafe_allow_html=True)
+    .stButton>button { 
+        border: 2px solid #00FF41; 
+        background: #000; 
+        color: #00FF41; 
+        font-weight: bold; 
+        height: 4em;
+        text-transform: uppercase;
+    }
+    .stButton>button:hover { background: #00FF41; color: #000; box-shadow: 0 0 20px #00FF41; }
+    [data-testid="stHeader"], footer { visibility: hidden; }
+</style>
+""", unsafe_allow_html=True)
 
-info_objetivos = {
-    "Próxima b": {"Dist": 4.2, "Tipo": "Rocoso", "Nota": "Candidato cercano."},
-    "Ross 128 b": {"Dist": 11.0, "Tipo": "Templado", "Nota": "Estrella estable."},
-    "K2-18b": {"Dist": 124.0, "Tipo": "Hicéano", "Nota": "Vapor de agua detectado."},
-    "Sector Wow!": {"Dist": 1800.0, "Tipo": "Histórico", "Nota": "Señal de 1977."},
-    "Andrómeda": {"Dist": 2500000.0, "Tipo": "Galaxia", "Nota": "Búsqueda Extragaláctica."}
+# --- 3. CATÁLOGO MAESTRO (10 DESTINOS CON DATOS CRÍTICOS) ---
+objetivos_db = {
+    "Sagitario A*": {"cat": "Sgr A*", "dist": "26,000 AL", "retraso": "26,000 años", "emision": "Edad de Hielo", "info": "Centro Galáctico. Agujero negro masivo."},
+    "Estrella de Tabby": {"cat": "KIC 8462852", "dist": "1,470 AL", "retraso": "1,470 años", "emision": "Año 556", "info": "Anomalía de luz. Posible Megaestructura."},
+    "Próxima b": {"cat": "Alpha Cen Cb", "dist": "4.2 AL", "retraso": "4.2 años", "emision": "Hace 4 años", "info": "Zona habitable. Candidato cercano."},
+    "Ross 128 b": {"cat": "Ross 128", "dist": "11.0 AL", "retraso": "11.0 años", "emision": "Hace 11 años", "info": "Mundo templado orbitando estrella estable."},
+    "Gliese 581g": {"cat": "GJ 581", "dist": "20.0 AL", "retraso": "20.0 años", "emision": "Hace 20 años", "info": "Super-Tierra con potencial atmosférico."},
+    "TRAPPIST-1e": {"cat": "2MASS J2306", "dist": "40.0 AL", "retraso": "40.0 años", "emision": "Hace 40 años", "info": "Mundo oceánico en sistema compacto."},
+    "K2-18b": {"cat": "EPIC 20191", "dist": "124.0 AL", "retraso": "124.0 años", "emision": "Siglo XIX", "info": "Firma química de Dimetilsulfuro (Vida)."},
+    "Sector Wow!": {"cat": "7UC Sgr", "dist": "1,800 AL", "retraso": "1,800 años", "emision": "Año 226", "info": "Origen de la señal de 1977."},
+    "Cúmulo M13": {"cat": "NGC 6205", "dist": "25,000 AL", "retraso": "25,000 años", "emision": "Pre-historia", "info": "Objetivo del mensaje de Arecibo."},
+    "Andrómeda": {"cat": "M31", "dist": "2.5M AL", "retraso": "2.5M años", "emision": "Plioceno", "info": "Civilizaciones extragalácticas masivas."}
 }
 
-st.title("📡 NEXUS-7: ULTIMATE CONTACT v7.1")
+st.title("📡 NEXUS-7 OMNIBUS | FINAL ABSOLUTE v14.0")
 
-# --- PANEL DE CONTROL (Nuevos parámetros) ---
-c1, c2, c3 = st.columns([1, 1, 2])
+# --- 4. CENTRO DE MANDO ---
+c1, _, c2 = st.columns([1, 0.1, 1.3])
 with c1:
-    objetivo = st.selectbox("🎯 DESTINO GALÁCTICO", list(info_objetivos.keys()))
-    k_scale = st.select_slider("🌌 ESCALA DE KARDASHOV", options=["Tipo I", "Tipo II", "Tipo III"])
+    st.subheader("🎯 CONTROL DE NAVEGACIÓN")
+    target_sel = st.selectbox("DESTINO", list(objetivos_db.keys()))
+    k_level = st.select_slider("ESCALA KARDASHOV", options=["Tipo I (Planetaria)", "Tipo II (Estelar)", "Tipo III (Galáctica)"], value="Tipo II (Estelar)")
+    gain_db = st.slider("SENSIBILIDAD (dB)", 100, 500, 200)
+    btn_scan = st.button("🚀 INICIAR ESCANEO PROFUNDO")
+
 with c2:
-    # AÑADIDO: Potencia de Antena
-    potencia_mw = st.slider("⚡ POTENCIA DE ANTENA (MW)", 10, 1000, 500)
-    ganancia = st.slider("📶 GANANCIA SENSORIAL (dB)", 150, 400, 250)
-with c3:
-    data = info_objetivos[objetivo]
+    t = objetivos_db[target_sel]
     st.markdown(f"""
-    <div class="detail-card">
-        <b>SISTEMA:</b> {objetivo} | <b>CIVILIZACIÓN:</b> {k_scale}<br>
-        <b>DISTANCIA BASE:</b> {data['Dist']:,} AL<br>
-        <b>POTENCIA EMISIÓN:</b> {potencia_mw} Megavatios<br>
-        <b>ESTADO:</b> ANTENA ALINEADA AL 98.4%
+    <div class="telemetria-card">
+        <h4>📊 ANÁLISIS DE TELEMETRÍA: {target_sel.upper()}</h4>
+        <b>SISTEMA:</b> {t['cat']} | <b>DISTANCIA:</b> {t['dist']}<br>
+        <b>RETRASO LUZ:</b> {t['retraso']} | <b>ORIGEN TEMPORAL:</b> {t['emision']}<br>
+        <hr style='border:0.5px solid #00FF41'>
+        <b>PROTOCOLO DE BÚSQUEDA:</b> {k_level}<br>
+        <b>DESCRIPCIÓN:</b> <i>{t['info']}</i>
     </div>
     """, unsafe_allow_html=True)
 
+# --- 5. ÁREA DE RADAR Y ANALIZADOR ---
 st.write("---")
+col_rad, col_ia = st.columns([2, 1])
 
-col_main, col_decoder = st.columns([2, 1])
-with col_main:
-    v_cascada = st.empty()
-    v_potencia = st.empty()
-with col_decoder:
-    st.subheader("📟 TELEMETRÍA DE CAMPO")
-    v_dist_live = st.empty()
-    v_terminal = st.empty()
-    v_alerta = st.empty()
+with col_rad:
+    st.subheader("🛰️ ESPECTRÓMETRO EN TIEMPO REAL")
+    v_water = st.empty()
+    v_spec = st.empty()
 
-if st.button("🚀 INICIAR ESCANEO PROFUNDO"):
-    pasos = 100
-    matriz = np.zeros((pasos, 400))
-    pos_x = random.randint(150, 250)
+with col_ia:
+    st.subheader("📟 ANALIZADOR ORIENTATIVO")
+    v_narrativa = st.empty()
+    v_log = st.empty()
+    v_gauge = st.empty()
+
+# --- 6. PROCESAMIENTO DE SEÑAL ---
+if btn_scan:
+    data_radar = np.random.rand(40, 100) * 0.5
+    is_hit = random.random() > 0.4
     
-    prob_map = {"Tipo I": 0.7, "Tipo II": 0.5, "Tipo III": 0.3}
-    es_alien = random.random() > prob_map[k_scale]
-    
-    distancia_base = info_objetivos[objetivo]["Dist"]
+    frases_ia = [
+        "Sintonizando antena de 70m...", "Escaneando 'Línea de Hidrógeno'...",
+        "Filtrando radiación estelar...", "Analizando picos de energía coherente...",
+        "Calculando desplazamiento Doppler...", "Buscando patrones matemáticos..."
+    ]
 
-    for t in range(pasos):
-        ruido = np.random.normal(0.5, 0.2, 400)
-        centro = int(pos_x + t * 0.05)
+    for i in range(60):
+        frame = np.random.rand(100) * 0.4
+        if is_hit: 
+            frame[50] += (gain_db / 110)
+            frame[49] += (gain_db / 220) # Armónicos para realismo
+            frame[51] += (gain_db / 220)
         
-        # AÑADIDO: Lógica de potencia vs distancia
-        # A más potencia de antena, el pico de señal es más limpio
-        factor_potencia = potencia_mw / 100
+        data_radar = np.roll(data_radar, -1, axis=0)
+        data_radar[-1] = frame
         
-        if 0 <= centro < 400:
-            if es_alien:
-                pico = (ganancia / 5) * factor_potencia
-                ruido[centro] += pico
-            else:
-                ruido[centro-5:centro+6] += (ganancia / 20)
-            
-        matriz[t] = ruido
+        # Waterfall Plot (AZUL CIAN)
+        fig_w, ax_w = plt.subplots(figsize=(10, 5), facecolor='black')
+        ax_w.imshow(data_radar, aspect='auto', cmap='cool', vmin=0, vmax=1.8)
+        ax_w.axis('off')
+        v_water.pyplot(fig_w)
+        plt.close(fig_w)
         
-        # Simulación de distancia variando por el movimiento orbital
-        dist_variacion = distancia_base + (np.sin(t/10) * (distancia_base * 0.001))
+        # Spectrum Plot
+        fig_s, ax_s = plt.subplots(figsize=(10, 1.2), facecolor='black')
+        ax_s.plot(frame, color='#00FF41' if not is_hit else '#FF3131', linewidth=1.5)
+        ax_s.set_facecolor('black')
+        ax_s.set_ylim(0, 4)
+        ax_s.axis('off')
+        v_spec.pyplot(fig_s)
+        plt.close(fig_s)
         
-        # Visualización
-        fig1, ax1 = plt.subplots(figsize=(10, 4), facecolor='black')
-        ax1.imshow(matriz, aspect='auto', cmap='magma' if es_alien else 'viridis', origin='lower')
-        ax1.axis('off')
-        v_cascada.pyplot(fig1)
-        plt.close(fig1)
-        
-        v_dist_live.metric("DISTANCIA ACTUAL (AL)", f"{dist_variacion:,.4f}")
-        v_terminal.code(f"📡 POTENCIA ANTENA: {potencia_mw} MW\n📈 SNR: {np.max(ruido)/1.5:.2f} dB\n🛰️ RASTREO: {t}%")
-        time.sleep(0.01)
+        # IA Orientativa
+        v_narrativa.info(f"IA: {random.choice(frases_ia)}")
+        v_log.code(f"PROGRESO: {i*1.6:.1f}%\nSNR: {np.max(frame)*6:.2f} dB\nRAD: {target_sel}")
+        time.sleep(0.04)
 
-    if es_alien:
-        v_alerta.success(f"¡CONTACTO EN {objetivo.upper()}!")
-        st.session_state.historial.append({
-            "Fecha": datetime.now().strftime("%H:%M"), 
-            "Origen": objetivo, 
-            "Distancia": f"{distancia_base} AL",
-            "Potencia": f"{potencia_mw} MW"
-        })
+    if is_hit:
+        v_narrativa.success(f"¡CONFIRMADO! Señal inteligente detectada. Los patrones coinciden con civilización {k_level} en {target_sel}.")
+        new_row = pd.DataFrame([{"Hora": datetime.now().strftime("%H:%M"), "Lugar": target_sel, "Escala K": k_level, "Result": "ÉXITO", "Frecuencia": "1420 MHz"}])
+        st.session_state.historial_df = pd.concat([st.session_state.historial_df, new_row], ignore_index=True)
+        st.session_state.historial_df.to_csv(DB_FILE, index=False)
     else:
-        v_alerta.error("SCAN COMPLETO: Sin señales inteligentes.")
+        v_narrativa.error(f"RESULTADO: Solo se ha detectado ruido térmico. El sector {target_sel} permanece en silencio.")
 
-# BITÁCORA ACTUALIZADA
-if st.session_state.historial:
-    st.divider()
-    st.subheader("📂 LOG DE CIVILIZACIONES (v7.1)")
-    st.table(pd.DataFrame(st.session_state.historial))
+# --- 7. ARCHIVO HISTÓRICO ---
+st.write("---")
+st.subheader("📂 BITÁCORA DE SEÑALES DETECTADAS")
+st.dataframe(st.session_state.historial_df, use_container_width=True)
