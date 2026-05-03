@@ -2,3 +2,4 @@ streamlit
 numpy
 setigen
 blimpy
+setuptools
