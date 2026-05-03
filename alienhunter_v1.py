@@ -3,103 +3,129 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import random
+import pandas as pd
 from datetime import datetime
 
-# CONFIGURACIÓN
+# CONFIGURACIÓN DE LA ACADEMIA NEXUS
 st.set_page_config(page_title="NEXUS-7 ACADEMY", page_icon="🎓", layout="wide")
 
+# Inicializar historial
 if 'historial' not in st.session_state:
     st.session_state['historial'] = []
 
-# ESTILO MEJORADO CON TOOLTIPS
+# ESTILO VISUAL PROFESIONAL
 st.markdown("""
     <style>
-    .stApp { background-color: #040804; color: #00FF41; font-family: 'Courier New', monospace; }
-    .info-box { background-color: #0a1a0a; border: 1px solid #00FF41; padding: 15px; border-radius: 5px; margin-bottom: 20px; font-size: 0.9em; }
-    .stButton>button { border: 2px solid #00FF41; background-color: #000; color: #00FF41; font-weight: bold; width: 100%; }
-    .stButton>button:hover { background-color: #00FF41; color: #000; }
+    .stApp { background-color: #020502; color: #00FF41; font-family: 'Courier New', monospace; }
+    .stButton>button { border: 2px solid #00FF41; background-color: #000; color: #00FF41; font-weight: bold; width: 100%; height: 3.5em; }
+    .stButton>button:hover { background-color: #00FF41; color: #000; box-shadow: 0 0 30px #00FF41; }
+    .info-card { background-color: #0a1a0a; border: 1px solid #1a3a1a; padding: 15px; border-radius: 5px; margin-bottom: 10px; }
+    #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
     </style>
     """, unsafe_allow_html=True)
 
-st.title("📡 NEXUS-7: ANALIZADOR ACADÉMICO v5.0")
+# BASE DE DATOS GALÁCTICA EXTENDIDA
+info_objetivos = {
+    "Próxima b": {"Dist": 4.2, "Tipo": "Rocoso", "Nota": "El planeta más cercano a la Tierra."},
+    "Ross 128 b": {"Dist": 11.0, "Tipo": "Habitable", "Nota": "Estrella enana roja muy estable."},
+    "Gliese 581g": {"Dist": 20.0, "Tipo": "Super-Tierra", "Nota": "Primer candidato a mundo habitable."},
+    "TRAPPIST-1e": {"Dist": 40.0, "Tipo": "Rocoso", "Nota": "Sistema con siete planetas hermanos."},
+    "K2-18b": {"Dist": 124.0, "Tipo": "Hicéano", "Nota": "Mundo con océanos y atmósfera de hidrógeno."},
+    "Estrella de Tabby": {"Dist": 1470.0, "Tipo": "Anómala", "Nota": "Famosa por sus bajadas de luz inexplicables."},
+    "Sector Wow!": {"Dist": 1800.0, "Tipo": "Histórico", "Nota": "Donde se captó la famosa señal en 1977."},
+    "Sagitario A*": {"Dist": 26000.0, "Tipo": "Agujero Negro", "Nota": "El corazón masivo de nuestra galaxia."},
+    "Cúmulo M13": {"Dist": 25000.0, "Tipo": "Cúmulo Estelar", "Nota": "300.000 estrellas. Enviamos un mensaje aquí en 1974."}
+}
 
-# --- GUÍA RÁPIDA PARA PRINCIPIANTES ---
-with st.expander("❓ ¿CÓMO LEER ESTOS GRÁFICOS? (GUÍA DE OPERADOR)"):
-    col_g1, col_g2 = st.columns(2)
-    with col_g1:
-        st.markdown("""
-        **1. RADAR DE CASCADA (Waterfall):**
-        * **Eje Horizontal:** Frecuencias de radio.
-        * **Eje Vertical:** El tiempo. Lo más nuevo aparece abajo.
-        * **Interpretación:** Una línea vertical continua indica una fuente estable. Si está inclinada, el objeto se está moviendo (Efecto Doppler).
-        """)
-    with col_g2:
-        st.markdown("""
-        **2. ESPECTRO DE POTENCIA:**
-        * **Interpretación:** Es un 'corte' de lo que pasa ahora mismo. 
-        * **Picos:** Cuanto más alto es el pico, más fuerte es la señal sobre el ruido del espacio. Un pico fino y alto es señal de tecnología.
-        """)
+st.title("📡 NEXUS-7: DEEP SPACE ACADEMY v5.1")
 
-# --- SIDEBAR ---
-st.sidebar.title("🎛️ CONFIGURACIÓN")
-target = st.sidebar.selectbox("Objetivo", ["Próxima b", "TRAPPIST-1e", "Estrella de Tabby", "Sagitario A*"])
-ganancia = st.sidebar.slider("Ganancia LNA (Sensibilidad)", 50, 150, 100)
+# --- PANEL EDUCATIVO ---
+with st.expander("📖 GUÍA DE INTERPRETACIÓN DE DATOS"):
+    col_a, col_b = st.columns(2)
+    with col_a:
+        st.write("**Gráfico Superior (Cascada):** Muestra cómo cambia la señal con el tiempo. Si la línea es recta, el objeto es estable. Si se inclina, es por el movimiento del planeta.")
+    with col_b:
+        st.write("**Gráfico Inferior (Potencia):** Muestra la fuerza de la señal. Un pico muy estrecho significa tecnología artificial. Un bulto ancho es solo ruido natural.")
 
-# --- UI PRINCIPAL ---
-c_graficos, c_analisis = st.columns([2, 1])
+# --- SIDEBAR DE CONTROL ---
+st.sidebar.title("🎛️ PANEL DE CONTROL")
+objetivo = st.sidebar.selectbox("Seleccionar Objetivo", list(info_objetivos.keys()))
+modo = st.sidebar.radio("Precisión de Escaneo", ["Táctica (Rápida)", "Científica (Lenta)"])
+ganancia = st.sidebar.slider("Potencia de Antena (dB)", 50, 150, 110)
 
-with c_graficos:
-    v_waterfall = st.empty()
-    st.caption("⬆️ Historial temporal de la señal (Cascada)")
-    v_power = st.empty()
-    st.caption("⬆️ Intensidad actual por frecuencia (Espectro de Potencia)")
+# Mostrar Info del Objetivo
+data = info_objetivos[objetivo]
+st.sidebar.markdown(f"""
+<div class="info-card">
+    <p><b>DETALLES DEL SECTOR:</b></p>
+    <p>🔭 Tipo: {data['Tipo']}</p>
+    <p>📏 Distancia: {data['Dist']} años luz</p>
+    <p>⏳ Retraso de señal: {data['Dist']} años</p>
+    <p>📝 {data['Nota']}</p>
+</div>
+""", unsafe_allow_html=True)
 
-with c_analisis:
-    st.subheader("📟 DIAGNÓSTICO IA")
-    v_consola = st.empty()
-    v_explicacion = st.empty()
+# --- ESPACIO DE TRABAJO ---
+col_radar, col_log = st.columns([2, 1])
 
-if st.button("🚀 INICIAR CAPTURA DE DATOS"):
-    pasos, columnas = 80, 400
-    datos = np.zeros((pasos, columnas))
-    es_rfi = random.random() < 0.3
-    pos_x = random.randint(100, 300)
+with col_radar:
+    v_cascada = st.empty()
+    v_potencia = st.empty()
+
+with col_log:
+    st.subheader("📟 INFORME DE IA")
+    v_terminal = st.empty()
+    v_resultado = st.empty()
+
+if st.button("🚀 INICIAR ESCANEO CUÁNTICO"):
+    pasos = 120 if modo == "Científica (Lenta)" else 60
+    matriz = np.zeros((pasos, 400))
+    pos_x = random.randint(150, 250)
+    es_alien = random.random() > 0.6 # 40% de probabilidad de éxito
     
     for t in range(pasos):
-        linea = np.random.normal(0.5, 0.15, columnas)
-        centro = int(pos_x + t * 0.1) # Deriva suave
+        ruido = np.random.normal(0.5, 0.2, 400)
+        centro = int(pos_x + t * 0.05)
         
-        if 0 <= centro < columnas:
-            ancho = 5 if es_rfi else 1
-            linea[centro-ancho:centro+ancho+1] += (ganancia / 12)
+        if 0 <= centro < 400:
+            intensidad = (ganancia / 10) + (2 if es_alien else 8)
+            ancho = 1 if es_alien else 6
+            ruido[centro-ancho:centro+ancho+1] += intensidad
+            
+        matriz[t] = ruido
         
-        datos[t] = linea
-        
-        # Actualizar Waterfall
-        fig1, ax1 = plt.subplots(figsize=(10, 4), facecolor='black')
-        ax1.imshow(datos, aspect='auto', cmap='magma', origin='lower')
+        # Render Cascada
+        fig1, ax1 = plt.subplots(figsize=(10, 5), facecolor='black')
+        ax1.imshow(matriz, aspect='auto', cmap='magma' if es_alien else 'viridis', origin='lower')
         ax1.axis('off')
-        v_waterfall.pyplot(fig1)
+        v_cascada.pyplot(fig1)
         plt.close(fig1)
         
-        # Actualizar Power Spectrum
+        # Render Potencia
         fig2, ax2 = plt.subplots(figsize=(10, 2), facecolor='black')
-        ax2.plot(linea, color='#00FF41', linewidth=1)
+        ax2.plot(ruido, color='#00FF41', linewidth=1)
         ax2.set_facecolor('black')
-        ax2.set_ylim(0, 20)
+        ax2.set_ylim(0, 25)
         ax2.axis('off')
-        v_power.pyplot(fig2)
+        v_potencia.pyplot(fig2)
         plt.close(fig2)
         
-        v_consola.code(f"MUESTREO: {t}/{pasos}\nINTENSIDAD: {np.max(linea):.2f}\nESTADO: ESCANEANDO...")
-        time.sleep(0.02)
+        v_terminal.code(f"REC_SIG: {t}/{pasos}\nVELOCIDAD: 300,000 km/s\nESTADO: ANALIZANDO FRECUENCIAS...")
+        time.sleep(0.01)
 
-    # --- EXPLICACIÓN FINAL DE RESULTADOS ---
-    with v_explicacion:
-        st.markdown("### 📝 INFORME DEL ANALISTA")
-        if es_rfi:
-            st.error("⚠️ INTERFERENCIA DETECTADA")
-            st.write("La señal es demasiado 'ancha'. Esto suele ser causado por satélites humanos o electrónica terrestre. No es de origen extra-solar.")
+    # RESULTADO FINAL
+    with v_resultado:
+        if es_alien:
+            st.success("🎯 ¡TECNOSÍGNAL DETECTADA!")
+            st.write(f"Esta señal es de 'Banda Estrecha'. Solo una civilización con transmisores de radio podría emitir algo tan preciso desde {objetivo}.")
+            if st.button("💾 REGISTRAR HALLAZGO"):
+                st.session_state.historial.append({"Fecha": datetime.now().strftime("%H:%M"), "Lugar": objetivo, "Tipo": "INTELIGENTE"})
         else:
-            st.success("✨ SEÑAL COHERENTE DETECTADA")
-            st.write("Señal de banda estrecha detectada. Esto es como ver un faro en la oscuridad; la naturaleza no crea señales tan finas y precisas. ¡Posible tecnofirma!")
+            st.error("📡 INTERFERENCIA TERRESTRE")
+            st.write("Señal demasiado ancha. Detectada colisión con satélites locales o ruido térmico estelar.")
+
+# HISTORIAL
+if st.session_state.historial:
+    st.divider()
+    st.subheader("📂 ARCHIVO HISTÓRICO")
+    st.table(st.session_state.historial)
