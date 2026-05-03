@@ -12,27 +12,10 @@ st.set_page_config(page_title="NEXUS-7 CONTACT", page_icon="👽", layout="wide"
 if 'historial' not in st.session_state:
     st.session_state['historial'] = []
 
-# --- ESTILO DE EMERGENCIA PARA EL MENÚ (v5.7.4) ---
+# ESTILO VISUAL (Fondo negro y letras verdes)
 st.markdown("""
     <style>
     .stApp { background-color: #020502; color: #00FF41; font-family: 'Courier New', monospace; }
-    
-    /* ESTE BLOQUE FUERZA LA APARICIÓN DEL BOTÓN DEL MENÚ */
-    button[kind="headerNoSpacing"] {
-        background-color: #00FF41 !important;
-        color: #000 !important;
-        border: 2px solid white !important;
-        visibility: visible !important;
-        display: block !important;
-        position: fixed !important;
-        top: 15px !important;
-        left: 15px !important;
-        z-index: 9999999 !important;
-        width: 50px !important;
-        height: 50px !important;
-        border-radius: 10px !important;
-    }
-
     .stButton>button { 
         border: 2px solid #00FF41; 
         background-color: #000; 
@@ -46,12 +29,12 @@ st.markdown("""
         color: #000; 
         box-shadow: 0 0 30px #00FF41; 
     }
-    .info-card { 
+    .control-panel { 
         background-color: #0a1a0a; 
-        border: 1px solid #1a3a1a; 
-        padding: 15px; 
-        border-radius: 5px; 
-        margin-bottom: 10px; 
+        border: 2px solid #1a3a1a; 
+        padding: 20px; 
+        border-radius: 10px; 
+        margin-bottom: 20px; 
     }
     #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
     </style>
@@ -60,32 +43,26 @@ st.markdown("""
 info_objetivos = {
     "Próxima b": {"Dist": 4.2, "Tipo": "Rocoso", "Nota": "Señal corta, mucha deriva Doppler."},
     "Ross 128 b": {"Dist": 11.0, "Tipo": "Habitable", "Nota": "Estrella enana roja muy estable."},
-    "TRAPPIST-1e": {"Dist": 40.0, "Tipo": "Rocoso", "Nota": "Posible red de comunicaciones entre planetas."},
-    "K2-18b": {"Dist": 124.0, "Tipo": "Hicéano", "Nota": "Mundo oceánico. Señal muy clara."},
-    "Estrella de Tabby": {"Dist": 1470.0, "Tipo": "Anómala", "Nota": "¿Megaestructura detectada?"},
-    "Sector Wow!": {"Dist": 1800.0, "Tipo": "Histórico", "Nota": "Alta probabilidad de re-detección."},
-    "Sagitario A*": {"Dist": 26000.0, "Tipo": "Agujero Negro", "Nota": "Mucho ruido de fondo, difícil filtrar."},
-    "Cúmulo M13": {"Dist": 25000.0, "Tipo": "Cúmulo Estelar", "Nota": "300.000 estrellas emitiendo."}
+    "TRAPPIST-1e": {"Dist": 40.0, "Tipo": "Rocoso", "Nota": "Sistema con 7 planetas."},
+    "K2-18b": {"Dist": 124.0, "Tipo": "Hicéano", "Nota": "Mundo oceánico con posible atmósfera."},
+    "Sagitario A*": {"Dist": 26000.0, "Tipo": "Agujero Negro", "Nota": "Ruido masivo de fondo."},
+    "Sector Wow!": {"Dist": 1800.0, "Tipo": "Histórico", "Nota": "La señal más famosa de SETI."}
 }
 
-# --- SIDEBAR (PANEL DE CONTROL) ---
-# Hemos puesto el sidebar arriba para que Streamlit lo procese primero
-with st.sidebar:
-    st.title("🎛️ PANEL DE CONTROL")
-    objetivo = st.selectbox("Seleccionar Objetivo", list(info_objetivos.keys()))
-    ganancia = st.sidebar.slider("Ganancia de Antena (dB)", 80, 200, 140)
-    
-    data = info_objetivos[objetivo]
-    st.markdown(f"""
-    <div class="info-card">
-        <p><b>INFO DE SECTOR:</b></p>
-        <p>🔭 {data['Tipo']}</p>
-        <p>📏 {data['Dist']} Años Luz</p>
-        <p>📝 {data['Nota']}</p>
-    </div>
-    """, unsafe_allow_html=True)
+st.title("📡 NEXUS-7: FIRST CONTACT v5.8")
 
-st.title("📡 NEXUS-7: FIRST CONTACT v5.7.4")
+# --- PANEL DE CONTROL FIJO (EN LUGAR DEL SIDEBAR) ---
+st.markdown('<div class="control-panel">', unsafe_allow_html=True)
+c1, c2, c3 = st.columns([1, 1, 2])
+
+with c1:
+    objetivo = st.selectbox("🎯 OBJETIVO", list(info_objetivos.keys()))
+with c2:
+    ganancia = st.slider("📶 GANANCIA (dB)", 80, 200, 150)
+with c3:
+    data = info_objetivos[objetivo]
+    st.info(f"🔭 {data['Tipo']} | 📏 {data['Dist']} Años Luz\n\n📝 {data['Nota']}")
+st.markdown('</div>', unsafe_allow_html=True)
 
 # --- ESPACIO DE TRABAJO ---
 col_radar, col_log = st.columns([2, 1])
@@ -104,6 +81,7 @@ if st.button("🚀 INICIAR ESCANEO DE BANDA ESTRECHA"):
     matriz = np.zeros((pasos, 400))
     pos_x = random.randint(150, 250)
     
+    # 60% de probabilidad de señal inteligente
     es_alien = random.random() > 0.4 
     
     for t in range(pasos):
@@ -118,12 +96,14 @@ if st.button("🚀 INICIAR ESCANEO DE BANDA ESTRECHA"):
             
         matriz[t] = ruido
         
+        # 1. Cascada
         fig1, ax1 = plt.subplots(figsize=(10, 5), facecolor='black')
         ax1.imshow(matriz, aspect='auto', cmap='magma' if es_alien else 'viridis', origin='lower')
         ax1.axis('off')
         v_cascada.pyplot(fig1)
         plt.close(fig1)
         
+        # 2. Potencia
         fig2, ax2 = plt.subplots(figsize=(10, 2), facecolor='black')
         ax2.plot(ruido, color='#00FF41', linewidth=1)
         ax2.set_facecolor('black')
@@ -132,7 +112,7 @@ if st.button("🚀 INICIAR ESCANEO DE BANDA ESTRECHA"):
         v_potencia.pyplot(fig2)
         plt.close(fig2)
         
-        v_terminal.code(f"MUESTRA: {t}/{pasos}\nSNR: {np.max(ruido):.1f}\nANALIZANDO...")
+        v_terminal.code(f"MUESTRA: {t}/{pasos}\nSNR: {np.max(ruido):.1f}\nESTADO: ESCANEANDO...")
         time.sleep(0.01)
 
     if es_alien:
@@ -146,4 +126,5 @@ if st.button("🚀 INICIAR ESCANEO DE BANDA ESTRECHA"):
 # HISTORIAL
 if st.session_state.historial:
     st.divider()
+    st.subheader("📂 HISTORIAL DE CONTACTOS")
     st.table(st.session_state.historial)
