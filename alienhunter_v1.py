@@ -9,32 +9,30 @@ from datetime import datetime
 # CONFIGURACIÓN NEXUS-7
 st.set_page_config(page_title="NEXUS-7 CONTACT", page_icon="👽", layout="wide")
 
-# Mantener el historial entre sesiones
 if 'historial' not in st.session_state:
     st.session_state['historial'] = []
 
-# ESTILO VISUAL CON PARCHE PARA EL MENÚ LATERAL
+# --- ESTILO DE EMERGENCIA PARA EL MENÚ (v5.7.4) ---
 st.markdown("""
     <style>
-    /* Fondo y texto general */
     .stApp { background-color: #020502; color: #00FF41; font-family: 'Courier New', monospace; }
     
-    /* FORZAR VISIBILIDAD DEL BOTÓN DEL MENÚ (SIDEBAR) */
-    [data-testid="stSidebarCollapsedControl"] {
+    /* ESTE BLOQUE FUERZA LA APARICIÓN DEL BOTÓN DEL MENÚ */
+    button[kind="headerNoSpacing"] {
         background-color: #00FF41 !important;
         color: #000 !important;
-        border-radius: 5px !important;
-        left: 20px !important;
-        top: 20px !important;
-        width: 40px;
-        height: 40px;
-        display: flex !important;
-        justify-content: center;
-        align-items: center;
-        box-shadow: 0 0 15px #00FF41;
+        border: 2px solid white !important;
+        visibility: visible !important;
+        display: block !important;
+        position: fixed !important;
+        top: 15px !important;
+        left: 15px !important;
+        z-index: 9999999 !important;
+        width: 50px !important;
+        height: 50px !important;
+        border-radius: 10px !important;
     }
 
-    /* Botones de acción */
     .stButton>button { 
         border: 2px solid #00FF41; 
         background-color: #000; 
@@ -48,8 +46,6 @@ st.markdown("""
         color: #000; 
         box-shadow: 0 0 30px #00FF41; 
     }
-    
-    /* Tarjetas de información */
     .info-card { 
         background-color: #0a1a0a; 
         border: 1px solid #1a3a1a; 
@@ -57,8 +53,6 @@ st.markdown("""
         border-radius: 5px; 
         margin-bottom: 10px; 
     }
-    
-    /* Limpieza de interfaz */
     #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
     </style>
     """, unsafe_allow_html=True)
@@ -74,9 +68,8 @@ info_objetivos = {
     "Cúmulo M13": {"Dist": 25000.0, "Tipo": "Cúmulo Estelar", "Nota": "300.000 estrellas emitiendo."}
 }
 
-st.title("📡 NEXUS-7: FIRST CONTACT v5.7.3")
-
 # --- SIDEBAR (PANEL DE CONTROL) ---
+# Hemos puesto el sidebar arriba para que Streamlit lo procese primero
 with st.sidebar:
     st.title("🎛️ PANEL DE CONTROL")
     objetivo = st.selectbox("Seleccionar Objetivo", list(info_objetivos.keys()))
@@ -91,6 +84,8 @@ with st.sidebar:
         <p>📝 {data['Nota']}</p>
     </div>
     """, unsafe_allow_html=True)
+
+st.title("📡 NEXUS-7: FIRST CONTACT v5.7.4")
 
 # --- ESPACIO DE TRABAJO ---
 col_radar, col_log = st.columns([2, 1])
@@ -109,7 +104,6 @@ if st.button("🚀 INICIAR ESCANEO DE BANDA ESTRECHA"):
     matriz = np.zeros((pasos, 400))
     pos_x = random.randint(150, 250)
     
-    # Probabilidad de éxito (60%)
     es_alien = random.random() > 0.4 
     
     for t in range(pasos):
@@ -118,26 +112,22 @@ if st.button("🚀 INICIAR ESCANEO DE BANDA ESTRECHA"):
         
         if 0 <= centro < 400:
             if es_alien:
-                # SEÑAL ALIEN: Banda Estrecha (Fina y Potente)
                 ruido[centro] += (ganancia / 6)
             else:
-                # INTERFERENCIA: Banda Ancha
                 ruido[centro-6:centro+7] += (ganancia / 12)
             
         matriz[t] = ruido
         
-        # 1. Gráfico de Cascada
         fig1, ax1 = plt.subplots(figsize=(10, 5), facecolor='black')
         ax1.imshow(matriz, aspect='auto', cmap='magma' if es_alien else 'viridis', origin='lower')
         ax1.axis('off')
         v_cascada.pyplot(fig1)
         plt.close(fig1)
         
-        # 2. Gráfico de Potencia
         fig2, ax2 = plt.subplots(figsize=(10, 2), facecolor='black')
         ax2.plot(ruido, color='#00FF41', linewidth=1)
         ax2.set_facecolor('black')
-        ax2.set_ylim(0, 50) 
+        ax2.set_ylim(0, 55) 
         ax2.axis('off')
         v_potencia.pyplot(fig2)
         plt.close(fig2)
@@ -145,17 +135,15 @@ if st.button("🚀 INICIAR ESCANEO DE BANDA ESTRECHA"):
         v_terminal.code(f"MUESTRA: {t}/{pasos}\nSNR: {np.max(ruido):.1f}\nANALIZANDO...")
         time.sleep(0.01)
 
-    # RESULTADO
     if es_alien:
         v_resultado.success("🎯 ¡TECNOSÍGNAL DETECTADA!")
-        if st.button("💾 GUARDAR CONTACTO"):
-            st.session_state.historial.append({"Fecha": datetime.now().strftime("%H:%M"), "Lugar": objetivo, "Tipo": "INTELIGENTE"})
+        if st.button("💾 GUARDAR"):
+            st.session_state.historial.append({"Lugar": objetivo, "Tipo": "INTELIGENTE"})
             st.rerun()
     else:
-        v_resultado.error("❌ INTERFERENCIA DETECTADA")
+        v_resultado.error("❌ INTERFERENCIA")
 
-# HISTORIAL DE HALLAZGOS
+# HISTORIAL
 if st.session_state.historial:
     st.divider()
-    st.subheader("📂 ARCHIVO FIRST CONTACT")
     st.table(st.session_state.historial)
