@@ -7,138 +7,107 @@ import pandas as pd
 from datetime import datetime
 
 # CONFIGURACIÓN MAESTRA
-st.set_page_config(page_title="NEXUS-7 OMNIBUS v7.5", page_icon="📡", layout="wide")
+st.set_page_config(page_title="NEXUS-7 v7.8 AUTO", page_icon="📡", layout="wide")
 
 if 'historial' not in st.session_state:
     st.session_state['historial'] = []
 
-# --- ESTILO VISUAL INTEGRAL ---
+# --- ESTILO VISUAL ---
 st.markdown("""
     <style>
     .stApp { background-color: #010801; color: #00FF41; font-family: 'Courier New', monospace; }
-    .stSelectbox, .stSlider { background-color: #051205; border-radius: 5px; padding: 10px; border: 1px solid #00FF41; }
-    .stButton>button { 
-        border: 2px solid #00FF41; background-color: #000; color: #00FF41; 
-        font-weight: bold; height: 3.5em; width: 100%; text-transform: uppercase; border-radius: 0;
-    }
-    .stButton>button:hover { background-color: #00FF41; color: #000; box-shadow: 0 0 50px #00FF41; }
     .detail-card { background-color: #051205; border: 1px solid #00FF41; padding: 20px; border-radius: 5px; height: 100%; }
-    .guide-box { background-color: #021a02; border-left: 4px solid #00FF41; padding: 10px; font-size: 0.8em; margin-bottom: 15px; }
-    .alert-active { color: #ff0000; animation: blink 1s infinite; font-weight: bold; font-size: 1.4em; text-align: center; border: 2px solid #ff0000; padding: 10px; }
+    .stSelectbox, .stSlider { background-color: #051205; border-radius: 5px; padding: 10px; border: 1px solid #00FF41; }
+    .stButton>button { border: 2px solid #00FF41; background-color: #000; color: #00FF41; font-weight: bold; width: 100%; }
+    .alert-active { color: #ff0000; animation: blink 1s infinite; font-weight: bold; text-align: center; border: 2px solid #ff0000; padding: 10px; }
     @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.2; } 100% { opacity: 1; } }
-    [data-testid="stSidebar"] {display: none;}
     </style>
     """, unsafe_allow_html=True)
 
-# BASE DE DATOS MAESTRA (TODOS LOS DETALLES)
+# --- BASE DE DATOS DE OBJETIVOS (DISTANCIAS AUTOMÁTICAS) ---
 info_objetivos = {
-    "Próxima b": {"Dist": "4.2 AL", "Tipo": "Rocoso / Habitable", "Retraso": "4.2 años", "Nota": "Vecino más cercano. Posible civilización Tipo I."},
-    "Ross 128 b": {"Dist": "11.0 AL", "Tipo": "Exoplaneta Templado", "Retraso": "11.0 años", "Nota": "Estrella enana roja muy estable. Señal limpia."},
-    "Gliese 581g": {"Dist": "20.0 AL", "Tipo": "Super-Tierra", "Retraso": "20.0 años", "Nota": "Primer candidato histórico a mundo habitable."},
-    "TRAPPIST-1e": {"Dist": "40.0 AL", "Tipo": "Sistema Multi-planetario", "Retraso": "40.0 años", "Nota": "7 planetas similares a la Tierra en órbita cerrada."},
-    "K2-18b": {"Dist": "124.0 AL", "Tipo": "Mundo Hicéano", "Retraso": "124.0 años", "Nota": "JWST detectó metano y vapor de agua aquí."},
-    "Estrella de Tabby": {"Dist": "1,470 AL", "Tipo": "Anomalía KIC 8462852", "Retraso": "1,470 años", "Nota": "Oscurecimientos masivos. ¿Enjambre de Dyson?"},
-    "Sector Wow!": {"Dist": "1,800 AL", "Tipo": "Histórico SETI", "Retraso": "1,800 años", "Nota": "Origen de la famosa señal captada en 1977."},
-    "Cúmulo M13": {"Dist": "25,000 AL", "Tipo": "Cúmulo Globular", "Retraso": "25,000 años", "Nota": "Contiene 300,000 estrellas. Alta densidad de objetivos."},
-    "Sagitario A*": {"Dist": "26,000 AL", "Tipo": "Agujero Negro Supermasivo", "Retraso": "26,000 años", "Nota": "Corazón de la Vía Láctea. Mucha radiación de fondo."},
-    "Andrómeda (M31)": {"Dist": "2.5M AL", "Tipo": "Galaxia Vecina", "Retraso": "2.5 Millones años", "Nota": "Búsqueda de civilizaciones Tipo III extragalácticas."}
+    "Próxima b": {"Dist": "4.2 AL", "Tipo": "Rocoso", "Retraso": "4.2 años", "Factor": 4.2},
+    "Ross 128 b": {"Dist": "11.0 AL", "Tipo": "Templado", "Retraso": "11.0 años", "Factor": 11.0},
+    "TRAPPIST-1e": {"Dist": "40.0 AL", "Tipo": "Multi-planetario", "Retraso": "40.0 años", "Factor": 40.0},
+    "K2-18b": {"Dist": "124.0 AL", "Tipo": "Hicéano", "Retraso": "124.0 años", "Factor": 124.0},
+    "Estrella de Tabby": {"Dist": "1,470 AL", "Tipo": "Anomalía KIC", "Retraso": "1,470 años", "Factor": 1470.0},
+    "Sector Wow!": {"Dist": "1,800 AL", "Tipo": "SETI Histórico", "Retraso": "1,800 años", "Factor": 1800.0},
+    "Cúmulo M13": {"Dist": "25,000 AL", "Tipo": "Cúmulo Globular", "Retraso": "25,000 años", "Factor": 25000.0},
+    "Andrómeda (M31)": {"Dist": "2.5M AL", "Tipo": "Galaxia", "Retraso": "2.5M años", "Factor": 2500000.0}
 }
 
-st.title("📡 NEXUS-7 OMNIBUS: FIRST CONTACT v7.5")
+st.title("📡 NEXUS-7 OMNIBUS: AUTO-TARGET v7.8")
 
-# --- GUÍA RÁPIDA DE OPERADOR ---
-with st.expander("📖 MANUAL DE OPERACIONES SETI (PUNTO A)"):
-    st.markdown("""
-    <div class="guide-box">
-    <b>IDENTIFICACIÓN:</b><br>
-    - 🟢 <b>Línea fina vertical:</b> Señal artificial de banda estrecha (Contacto).<br>
-    - 🔵 <b>Manchas gruesas:</b> Ruido térmico o interferencia humana (RFI).<br>
-    - 📐 <b>Inclinación:</b> Deriva Doppler causada por el movimiento planetario.<br>
-    - ⚡ <b>Amplitud:</b> A mayor Ganancia, más definición del pico en el espectro.
-    </div>
-    """, unsafe_allow_html=True)
-
-# --- PANEL DE CONTROL SUPERIOR ---
+# PANEL DE CONTROL
 c_ctrl, c_gain, c_tele = st.columns([1.5, 1.5, 3])
 
 with c_ctrl:
     st.subheader("🎯 NAVEGACIÓN")
-    objetivo = st.selectbox("OBJETIVO", list(info_objetivos.keys()))
+    # Al cambiar el selectbox, todo lo demás se actualiza automáticamente
+    objetivo = st.selectbox("SELECCIONAR OBJETIVO", list(info_objetivos.keys()))
     k_scale = st.select_slider("🌌 NIVEL KARDASHOV", options=["Tipo I", "Tipo II", "Tipo III"])
 
 with c_gain:
     st.subheader("📶 ANTENA")
-    ganancia = st.slider("GANANCIA (dB)", 100, 500, 200)
-    audio = st.checkbox("🔊 AUDIO-MONITOR", value=True)
-    trigger = st.button("🚀 INICIAR ESCANEO PROFUNDO")
+    ganancia = st.slider("GANANCIA (dB)", 100, 500, 250)
+    trigger = st.button("🚀 INICIAR ESCANEO")
 
 with c_tele:
+    # AQUÍ SE MUESTRA LA DISTANCIA AUTOMÁTICA
     data = info_objetivos[objetivo]
     st.markdown(f"""
     <div class="detail-card">
-        <h3 style='margin:0; color:#00FF41;'>📊 TELEMETRÍA DE SECTOR</h3>
-        <p style='margin:5px 0;'><b>SISTEMA:</b> {objetivo.upper()} | <b>TIPO:</b> {data['Tipo']}</p>
-        <p style='margin:5px 0;'><b>DISTANCIA:</b> {data['Dist']} | <b>RETRASO:</b> {data['Retraso']}</p>
-        <hr style='border:0.5px solid #1a3a1a;'>
-        <p style='margin:0; font-size:0.9em; color:#888;'><i>{data['Nota']}</i></p>
+        <h3 style='margin:0; color:#00FF41;'>📊 TELEMETRÍA AUTOMÁTICA</h3>
+        <p style='margin:5px 0;'><b>SISTEMA:</b> {objetivo.upper()}</p>
+        <p style='margin:5px 0;'><b>DISTANCIA:</b> {data['Dist']}</p>
+        <p style='margin:5px 0;'><b>RETRASO DE SEÑAL:</b> {data['Retraso']}</p>
+        <p style='margin:5px 0;'><b>TIPO:</b> {data['Tipo']}</p>
     </div>
     """, unsafe_allow_html=True)
 
 st.write("---")
 
-# --- ÁREA DE TRABAJO ---
-col_radar, col_decoder = st.columns([2, 1])
+# --- LÓGICA DE ESCANEO ---
+v_cascada = st.empty()
+v_potencia = st.empty()
+v_alerta = st.empty()
 
-with col_radar:
-    st.write("🛰️ **VISUALIZACIÓN DE ESPECTRO**")
-    v_cascada = st.empty()
-    v_potencia = st.empty()
-
-with col_decoder:
-    st.subheader("📟 DECODER IA")
-    v_alerta = st.empty()
-    v_terminal = st.empty()
-    v_matrix = st.empty()
-
-# LÓGICA DE ESCANEO
 if trigger:
     pasos = 100
     matriz = np.zeros((pasos, 400))
     pos_x = random.randint(150, 250)
-    
-    # Probabilidad según Kardashev (Más fácil detectar Tipo III)
-    prob_map = {"Tipo I": 0.8, "Tipo II": 0.5, "Tipo III": 0.2}
-    es_alien = random.random() > prob_map[k_scale]
-    
-    # Audio inicial
-    if audio: st.components.v1.html("<script>new Audio('https://www.soundjay.com/misc/sounds/white-noise-01.mp3').play();</script>", height=0)
+    es_alien = random.random() > 0.4 # Probabilidad de contacto
 
     for t in range(pasos):
         ruido = np.random.normal(0.5, 0.2, 400)
-        centro = int(pos_x + t * 0.06)
+        centro = int(pos_x + t * 0.05)
+        if 0 <= centro < 400 and es_alien:
+            ruido[centro] += (ganancia / 5)
         
-        if 0 <= centro < 400:
-            if es_alien:
-                # SEÑAL ALIEN (Banda estrecha)
-                ruido[centro] += (ganancia / 4.5)
-            else:
-                # RFI (Banda ancha)
-                ruido[centro-8:centro+9] += (ganancia / 15)
-            
         matriz[t] = ruido
         
         # Render Waterfall
-        fig1, ax1 = plt.subplots(figsize=(10, 4), facecolor='black')
+        fig1, ax1 = plt.subplots(figsize=(10, 3), facecolor='black')
         ax1.imshow(matriz, aspect='auto', cmap='magma' if es_alien else 'viridis', origin='lower')
         ax1.axis('off')
         v_cascada.pyplot(fig1)
         plt.close(fig1)
-        
-        # Render Potencia
-        fig2, ax2 = plt.subplots(figsize=(10, 2), facecolor='black')
-        ax2.plot(ruido, color='#00FF41' if not es_alien else '#ff0000', linewidth=1)
-        ax2.set_facecolor('black')
-        ax2.set_ylim(0, 150)
-        ax2.axis('off')
-        v_potencia.pyplot(fig2)
-        plt.close(fig2)
+        time.sleep(0.01)
+
+    if es_alien:
+        v_alerta.markdown('<p class="alert-active">⚠️ CONTACTO DETECTADO ⚠️</p>', unsafe_allow_html=True)
+        # Guardar automáticamente con la distancia del objetivo
+        st.session_state.historial.append({
+            "ID": len(st.session_state.historial) + 1,
+            "Hora": datetime.now().strftime("%H:%M"),
+            "Lugar": objetivo,
+            "Distancia": data['Dist'], # Distancia automática guardada
+            "K-Scale": k_scale,
+            "Retraso": data['Retraso']
+        })
+
+# HISTORIAL DE CIVILIZACIÓN
+if st.session_state.historial:
+    st.divider()
+    st.subheader("📂 ARCHIVO DE CIVILIZACIONES")
+    st.table(pd.DataFrame(st.session_state.historial)[["ID", "Hora", "Lugar", "Distancia", "Retraso", "K-Scale"]])
