@@ -3,112 +3,137 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import random
+import pandas as pd
 from datetime import datetime
 
-# CONFIGURACIÓN DE LA APP
-st.set_page_config(page_title="NEXUS-7 PRO", page_icon="📡", layout="wide")
+# CONFIGURACIÓN PRO
+st.set_page_config(page_title="NEXUS-7 EXPLORER", page_icon="🔭", layout="wide")
 
-# Inicializar Base de Datos en la sesión (Punto B)
+# Inicializar sesión
 if 'historial' not in st.session_state:
     st.session_state['historial'] = []
 
-# ESTILO "NASA DARK MODE"
+# ESTILO "DEEP SPACE" MEJORADO
 st.markdown("""
     <style>
-    .stApp { background-color: #050505; color: #00FF41; font-family: 'Courier New', monospace; }
-    .stButton>button { border: 2px solid #00FF41; background-color: #000; color: #00FF41; width: 100%; transition: 0.3s; }
-    .stButton>button:hover { background-color: #00FF41; color: #000; box-shadow: 0 0 20px #00FF41; }
-    .stMetric { border: 1px solid #111; background-color: #0a0a0a; padding: 10px; border-radius: 5px; }
+    .stApp { background-color: #020202; color: #00FF41; font-family: 'Courier New', monospace; }
+    .stButton>button { border: 2px solid #00FF41; background-color: #000; color: #00FF41; border-radius: 0px; font-weight: bold; }
+    .stButton>button:hover { background-color: #00FF41; color: #000; box-shadow: 0 0 30px #00FF41; }
+    .data-card { background-color: #0a0a0a; border: 1px solid #1a1a1a; padding: 20px; border-radius: 5px; margin-bottom: 10px; }
     #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
     </style>
     """, unsafe_allow_html=True)
 
-st.title("📟 NEXUS-7: DEEP SPACE ANALYZER v3.0")
+# BASE DE DATOS DE OBJETIVOS REALES
+info_objetivos = {
+    "Próxima b": {"Distancia": "4.24 AL", "Estrella": "Enana Roja (M)", "Coordenadas": "14h 29m / -62°"},
+    "Kepler-186f": {"Distancia": "582 AL", "Estrella": "Enana K", "Coordenadas": "19h 54m / +43°"},
+    "TRAPPIST-1e": {"Distancia": "40.7 AL", "Estrella": "Enana ultrafría", "Coordenadas": "23h 06m / -05°"},
+    "Estrella de Tabby": {"Distancia": "1,470 AL", "Estrella": "Tipo F", "Coordenadas": "20h 06m / +44°"},
+    "Sagitario A*": {"Distancia": "26,670 AL", "Estrella": "Agujero Negro Supermasivo", "Coordenadas": "17h 45m / -29°"}
+}
+
+st.title("📟 NEXUS-7: EXPLORER EDITION v4.0")
 st.write("---")
 
-# --- BARRA LATERAL ---
-st.sidebar.header("🕹️ CONTROL DE MISIÓN")
-objetivo = st.sidebar.selectbox("Fijar Objetivo", ["Próxima b", "Kepler-186f", "TRAPPIST-1e", "Estrella de Tabby", "Sagitario A*"])
-potencia = st.sidebar.slider("Potencia de Antena (dB)", 20, 100, 85)
+# --- BARRA LATERAL (CONTROL DE MISIÓN) ---
+st.sidebar.title("🎮 MÓDULO DE CONTROL")
+target = st.sidebar.selectbox("Fijar Objetivo Galáctico", list(info_objetivos.keys()))
+sensibilidad = st.sidebar.select_slider("Sensibilidad de Recepción", options=["BAJA", "MEDIA", "ALTA", "MÁXIMA"], value="ALTA")
+potencia_map = {"BAJA": 40, "MEDIA": 60, "ALTA": 85, "MÁXIMA": 110}
 
-# --- PANEL PRINCIPAL ---
-col_radar, col_telemetria = st.columns([2, 1])
+# Mostrar Info del Objetivo en la Sidebar
+st.sidebar.markdown(f"""
+<div class="data-card">
+    <p><b>INFO DE SECTOR:</b></p>
+    <p>Distancia: {info_objetivos[target]['Distancia']}</p>
+    <p>Estrella: {info_objetivos[target]['Estrella']}</p>
+    <p>Coord: {info_objetivos[target]['Coordenadas']}</p>
+</div>
+""", unsafe_allow_html=True)
+
+# --- LAYOUT PRINCIPAL ---
+col_radar, col_analisis = st.columns([2, 1])
 
 with col_radar:
-    st.subheader(f"📡 SECTOR: {objetivo.upper()}")
-    pantalla = st.empty()
-    progreso = st.empty()
+    st.subheader(f"📡 RADAR DE CASCADA: {target}")
+    radar_plot = st.empty()
+    st.subheader("📉 ESPECTRO DE POTENCIA (Power Spectrum)")
+    power_plot = st.empty()
 
-with col_telemetria:
-    st.subheader("📊 DATOS EN VIVO")
+with col_analisis:
+    st.subheader("📟 TELEMETRÍA")
     consola = st.empty()
-    stats = st.empty()
+    alertas = st.empty()
 
-# Lógica del Escaneo
-if st.button("EJECUTAR ESCANEO TÁCTICO"):
-    filas, columnas = 60, 400
+# LÓGICA DE ESCANEO
+if st.button("🚀 INICIAR ESCANEO DE ESPACIO PROFUNDO"):
+    filas, columnas = 70, 500
     matriz = np.zeros((filas, columnas))
-    pos_señal = random.randint(100, 300)
-    deriva = random.uniform(-0.4, 0.4)
-
+    pos_señal = random.randint(150, 350)
+    deriva = random.uniform(-0.6, 0.6)
+    
     for t in range(filas):
-        ruido = np.random.normal(0.5, 0.15, columnas)
+        # Ruido y Señal
+        ruido = np.random.normal(0.5, 0.2, columnas)
         centro = int(pos_señal + t * deriva)
         if 0 <= centro < columnas:
-            # Inyectar señal según potencia
-            ruido[centro-2:centro+3] += (potencia / 12)
+            p_val = potencia_map[sensibilidad]
+            ruido[centro-2:centro+3] += (p_val / 10)
         
         matriz[t] = ruido
         
-        # Renderizado de Radar
-        fig, ax = plt.subplots(figsize=(10, 5), facecolor='black')
-        ax.imshow(matriz, aspect='auto', cmap='magma', origin='lower')
-        ax.axis('off')
-        pantalla.pyplot(fig)
-        plt.close(fig)
+        # 1. Gráfico de Radar (Cascada)
+        fig1, ax1 = plt.subplots(figsize=(10, 4), facecolor='black')
+        ax1.imshow(matriz, aspect='auto', cmap='magma', origin='lower')
+        ax1.axis('off')
+        radar_plot.pyplot(fig1)
+        plt.close(fig1)
         
-        progreso.progress((t+1)/filas)
-        consola.code(f"SYNC_OK..{random.random()}\nFREQ_LOCK: {centro}MHz\nGAIN: +{potencia}dB")
-        time.sleep(0.04)
+        # 2. Gráfico de Potencia (Línea)
+        fig2, ax2 = plt.subplots(figsize=(10, 2), facecolor='black')
+        ax2.plot(ruido, color='#00FF41', linewidth=1)
+        ax2.set_facecolor('black')
+        ax2.set_ylim(0, 15)
+        ax2.axis('off')
+        power_plot.pyplot(fig2)
+        plt.close(fig2)
+        
+        # Consola
+        consola.code(f"SCANNING_{target.upper()}...\nFREQ_LOCKED: {centro}MHz\nNOISE_FLOOR: -110dBm\nSIG_STRENGTH: {np.max(ruido):.2f}")
+        time.sleep(0.03)
 
-    # --- RESULTADOS ---
-    score = random.randint(88, 99) if potencia > 70 else random.randint(10, 45)
+    # RESULTADOS DE IA
+    score = random.randint(85, 99) if potencia_map[sensibilidad] > 50 else random.randint(10, 40)
     
-    st.write("---")
-    res1, res2, res3 = st.columns(3)
-    res1.metric("CONFIDENCIALIDAD IA", f"{score}%")
-    res2.metric("TIPO DE SEÑAL", "BANDA ESTRECHA" if score > 70 else "RUIDO TÉRMICO")
+    st.divider()
+    c1, c2, c3 = st.columns(3)
+    c1.metric("PROBABILIDAD IA", f"{score}%")
+    c2.metric("ORIGEN", "ARTIFICIAL" if score > 75 else "ESTELAR")
     
-    # PUNTO A: DECODIFICADOR DE MENSAJES
-    if score > 90:
-        st.warning("⚠️ ¡SEÑAL DE ALTA INTENSIDAD DETECTADA! INICIANDO DECODIFICACIÓN...")
-        mensajes_alien = [
-            "2-3-5-7-11-13-17-19-23 (SEC. PRIMOS)",
-            "01001000 01001111 01001100 01000001",
-            "COORDINADAS: 14.242n, 10.121e",
-            "PATRÓN MATEMÁTICO: FIBONACCI DETECTADO",
-            "ALERTA: SEÑAL DE ORIGEN ARTIFICIAL CONFIRMADA"
-        ]
-        with st.expander("🔓 VER MENSAJE DECODIFICADO"):
-            st.code(random.choice(mensajes_alien))
-    
-    # PUNTO B: REGISTRO DE HALLAZGOS
-    nuevo_hallazgo = {
-        "Fecha": datetime.now().strftime("%Y-%m-%d %H:%M"),
-        "Objetivo": objetivo,
-        "Probabilidad": f"{score}%",
-        "Veredicto": "EXITOSO" if score > 70 else "FALLIDO"
-    }
-    
-    if st.button("💾 GUARDAR EN BASE DE DATOS"):
-        st.session_state['historial'].append(nuevo_hallazgo)
-        st.success("Registro guardado en el Archivo Nexus-7.")
+    if score > 75:
+        st.success(f"💥 ¡TECNOSÍGNAL CONFIRMADA EN {target}!")
+        with st.expander("🔓 DESBLOQUEAR MENSAJE DECODIFICADO"):
+            msg = random.choice(["SEC_PRIMOS_DETECTADA", "PATRON_MATEMATICO_PI", "BINARIO_REPETITIVO", "MAPA_ESTELAR_EXTERNO"])
+            st.code(f"DECODE_RESULT: {msg}")
+            
+        # BOTÓN GUARDAR
+        if st.button("📥 REGISTRAR EN EL ARCHIVO"):
+            hallazgo = {"Fecha": datetime.now().strftime("%H:%M"), "Sector": target, "Prob": f"{score}%", "Info": info_objetivos[target]['Estrella']}
+            st.session_state.historial.append(hallazgo)
+            st.toast("Hallazgo guardado correctamente.")
 
-# --- SECCIÓN DE HISTORIAL (Punto B) ---
-if st.session_state['historial']:
-    st.write("---")
-    st.subheader("📂 ARCHIVO HISTÓRICO DE HALLAZGOS")
-    st.table(st.session_state['historial'])
-    if st.button("🗑️ LIMPIAR REGISTROS"):
-        st.session_state['historial'] = []
+# --- HISTORIAL Y EXPORTACIÓN (Punto B mejorado) ---
+if st.session_state.historial:
+    st.divider()
+    st.subheader("📂 REGISTRO DE HALLAZGOS NEXUS-7")
+    df = pd.DataFrame(st.session_state.historial)
+    st.table(df)
+    
+    # Botón para descargar los datos (Punto Profesional)
+    csv = df.to_csv(index=False).encode('utf-8')
+    st.download_button("💾 DESCARGAR REGISTRO (CSV)", csv, "nexus7_logs.csv", "text/csv")
+    
+    if st.button("🗑️ RESETEAR ARCHIVO"):
+        st.session_state.historial = []
         st.rerun()
