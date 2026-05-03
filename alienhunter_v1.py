@@ -2,41 +2,45 @@ import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Intentamos importar setigen, si falla damos un aviso amigable
-try:
-    import setigen as stg
-except Exception:
-    st.error("Instalando componentes astronómicos... Por favor, pulsa el botón de 'Reboot' en el menú de Streamlit si este mensaje no desaparece en 1 minuto.")
-    st.stop()
-
 st.set_page_config(page_title="Alien Hunter IA", page_icon="👽")
 
 st.title("📡 Detector de Tecnofirmas IA")
 st.write("Analizando señales de radioastronomía en busca de patrones tecnológicos.")
 
-# Configuración en la barra lateral
-st.sidebar.header("Parámetros")
-sensibilidad = st.sidebar.slider("Sensibilidad", 10, 50, 25)
+# Configuración lateral
+st.sidebar.header("Parámetros del Telescopio")
+sensibilidad = st.sidebar.slider("Potencia de la Señal (SNR)", 1, 100, 25)
 
-if st.button("Iniciar Escaneo"):
-    with st.spinner("Buscando señales en el espectro..."):
-        # Generamos una señal sintética pura con numpy y setigen simplificado
-        # Esto evita usar las partes de blimpy que dan error
-        frame = stg.Frame(fchans=1024, tsteps=32, df=2.7939677238464355, dt=18.253611008)
-        frame.add_noise(x_mean=0, noise_type='chi2')
+if st.button("Iniciar Escaneo del Espacio Profundo"):
+    with st.spinner("Procesando datos..."):
+        # Creamos una matriz de datos (Tiempo vs Frecuencia)
+        t_steps = 64
+        f_chans = 1024
         
-        # Añadimos la "firma alienígena"
-        frame.add_signal(stg.constant_path(f_start=frame.get_frequency(200), drift_rate=2),
-                         stg.constant_t_profile(level=frame.get_intensity(snr=sensibilidad)),
-                         stg.gaussian_f_profile(width=40),
-                         stg.constant_bp_profile(level=1))
+        # 1. Generamos ruido de fondo (como el siseo de una radio)
+        data = np.random.exponential(scale=1.0, size=(t_steps, f_chans))
         
-        # Creamos el gráfico
+        # 2. Inyectamos la "Tecnofirma" (una línea con deriva Doppler)
+        # Esto simula un transmisor moviéndose en el espacio
+        start_chan = 200
+        drift_rate = 0.5  # La inclinación de la línea
+        
+        for i in range(t_steps):
+            center = int(start_chan + i * drift_rate)
+            # Dibujamos un pulso gaussiano en cada paso de tiempo
+            lanes = np.arange(f_chans)
+            data[i] += (sensibilidad / 5) * np.exp(-((lanes - center)**2) / (2 * 3**2))
+
+        # 3. Visualización
         fig, ax = plt.subplots(figsize=(10, 6))
-        ax.imshow(frame.get_data(), aspect='auto', cmap='magma')
-        ax.set_title("Espectrograma: Señal detectada")
-        ax.set_xlabel("Frecuencia")
-        ax.set_ylabel("Tiempo")
+        # Usamos 'magma' que es el color típico de la astronomía
+        img = ax.imshow(data, aspect='auto', cmap='magma', origin='lower')
+        plt.colorbar(img, label='Intensidad de Radio')
+        ax.set_title("Espectrograma: Candidato a Tecnofirma Detectado")
+        ax.set_xlabel("Frecuencia (Canales)")
+        ax.set_ylabel("Tiempo (Pasos)")
+        
         st.pyplot(fig)
         
-        st.success("¡Señal detectada! El patrón muestra una deriva Doppler coherente.")
+        st.success("✅ ¡Detección confirmada! Señal de banda estrecha con deriva coherente.")
+        st.info("La inclinación de la señal sugiere que el emisor está en un planeta en rotación.")
