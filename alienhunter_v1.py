@@ -4,159 +4,177 @@ import matplotlib.pyplot as plt
 import time
 import random
 import pandas as pd
+from datetime import datetime
 
-# --- CONFIGURACIÓN DE SISTEMA NEXUS-7 v9.0 ---
-st.set_page_config(page_title="NEXUS-7 AI v9.0", page_icon="📡", layout="wide")
+# --- CONFIGURACIÓN DE SISTEMA NEXUS-7 v9.0 ULTIMATE ---
+st.set_page_config(page_title="NEXUS-7 AI v9.0", page_icon="👽", layout="wide")
 
-# Estilo CSS Avanzado (Dark SETI + AI Overlay)
+# --- BASE DE DATOS CIENTÍFICA ---
+INFO_SISTEMAS = {
+    "Próxima b": {"dist": "4.24 AL", "tipo": "Rocoso", "estrella": "Enana Roja (M)", "hab": "Zona Alta"},
+    "Ross 128 b": {"dist": "11.03 AL", "tipo": "Templado", "estrella": "Enana Roja Inactiva", "hab": "Confirmada"},
+    "K2-18b": {"dist": "124 AL", "tipo": "Hicéano", "estrella": "Enana K", "hab": "Vapor de Agua"},
+    "Sector Wow!": {"dist": "1,800 AL", "tipo": "Desconocido", "estrella": "Análogo Solar", "hab": "Señal Histórica"},
+    "Andrómeda": {"dist": "2.5M AL", "tipo": "Galaxia", "estrella": "Cúmulo Estelar", "hab": "Extragaláctica"}
+}
+
+# --- ESTILO VISUAL INYECTADO (MIL-SPEC) ---
 st.markdown("""
     <style>
-    .stApp { background-color: #010801; color: #00FF41; font-family: 'Courier New', monospace; }
+    .stApp { background-color: #010a01; color: #00FF41; font-family: 'Courier New', monospace; }
     .ai-terminal { 
-        background-color: rgba(0, 20, 0, 0.8); 
-        border: 1px solid #00FF41; 
-        padding: 15px; 
-        font-size: 0.85rem; 
-        height: 300px; 
-        overflow-y: auto;
-        box-shadow: inset 0 0 10px #00FF41;
+        background-color: rgba(0, 15, 0, 0.95); border: 1px solid #00FF41; 
+        padding: 15px; font-size: 0.8rem; height: 320px; overflow-y: auto;
+        box-shadow: inset 0 0 20px rgba(0, 255, 65, 0.1);
     }
-    .status-tag { 
-        color: #000; background-color: #00FF41; 
-        padding: 2px 6px; border-radius: 3px; font-weight: bold; font-size: 10px;
-    }
-    .ai-description {
-        background: linear-gradient(90deg, rgba(0,255,65,0.1), transparent);
-        border-left: 3px solid #00FF41;
-        padding: 10px;
-        margin: 10px 0;
-        font-style: italic;
-    }
-    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-    .scanning-active { animation: pulse 1.5s infinite; color: #ff0000; }
+    .ai-card { border: 1px solid #00FF41; padding: 15px; background: rgba(0,40,0,0.3); border-radius: 5px; }
+    .ai-description { border-left: 4px solid #00FF41; padding-left: 15px; margin: 15px 0; color: #ccffcc; font-style: italic; background: rgba(0,255,65,0.05); padding-top: 5px; padding-bottom: 5px;}
+    .stButton>button { border: 2px solid #00FF41 !important; background-color: #000 !important; color: #00FF41 !important; width: 100%; font-weight: bold; height: 3em; text-transform: uppercase; }
+    .stButton>button:hover { background-color: #00FF41 !important; color: #000 !important; box-shadow: 0 0 40px #00FF41; transition: 0.3s; }
+    .critical-alert { color: #ff0000; font-weight: bold; animation: blinker 0.8s linear infinite; text-align: center; font-size: 1.2em; border: 1px solid #ff0000; padding: 10px; }
+    @keyframes blinker { 50% { opacity: 0.3; } }
     </style>
     """, unsafe_allow_html=True)
 
-# --- BASE DE DATOS E HISTORIAL ---
+# Motor de Audio (JS Inyectado)
+def play_sound(sound_type="noise"):
+    url = "https://www.soundjay.com/buttons/beep-01a.mp3" if sound_type == "alien" else "https://www.soundjay.com/misc/sounds/white-noise-01.mp3"
+    st.components.v1.html(f"<script>new Audio('{url}').play();</script>", height=0)
+
+# Memoria de Sesión
 if 'ai_log' not in st.session_state:
-    st.session_state.ai_log = ["◈ SISTEMA NEXUS-7 INICIALIZADO...", "◈ IA HEURÍSTICA ONLINE."]
+    st.session_state.ai_log = ["◈ NÚCLEO IA NEXUS-7 ACTIVADO", "◈ PROTOCOLO DE ESCANEO LISTO."]
+if 'historial' not in st.session_state:
+    st.session_state.historial = []
 
-def add_log(text):
+def push_log(msg):
     t = time.strftime("%H:%M:%S")
-    st.session_state.ai_log.insert(0, f"[{t}] {text}")
+    st.session_state.ai_log.insert(0, f"[{t}] {msg}")
 
-# --- INTERFAZ SUPERIOR ---
+# --- CABECERA ---
 st.title("📡 NEXUS-7: DEEP SPACE ANALYZER v9.0")
-st.markdown("<div style='margin-top:-20px; color:#555;'>AI-HEURISTIC CORE ENABLED</div>", unsafe_allow_html=True)
+st.write("---")
 
-col_ctrl, col_info = st.columns([2, 1])
+col_top_left, col_top_right = st.columns([2, 1])
 
-with col_ctrl:
-    c1, c2, c3 = st.columns(3)
-    target = c1.selectbox("🎯 OBJETIVO", ["Próxima b", "Ross 128 b", "K2-18b", "Sector Wow!"])
-    k_scale = c2.select_slider("🌌 ESCALA KARDASHOV", ["Tipo I", "Tipo II", "Tipo III"])
-    gain = c3.slider("📶 GANANCIA SENSORIAL (dB)", 100, 500, 300)
+with col_top_left:
+    c1, c2 = st.columns(2)
+    target = c1.selectbox("🎯 DESTINO GALÁCTICO", list(INFO_SISTEMAS.keys()))
+    k_scale = c2.select_slider("🌌 NIVEL DE CIVILIZACIÓN (KARDASHOV)", ["Tipo I", "Tipo II", "Tipo III"])
+    
+    c3, c4 = st.columns([2, 1])
+    gain = c3.slider("📶 GANANCIA DEL SENSOR (dB)", 200, 800, 400)
+    audio_on = c4.checkbox("🔊 AUDIO-LOG", value=True)
 
-with col_info:
+with col_top_right:
+    d = INFO_SISTEMAS[target]
     st.markdown(f"""
-    <div style="border: 1px solid #00FF41; padding: 10px; background: rgba(0,30,0,0.5);">
-        <b>SISTEMA:</b> {target} | <b>DISTANCIA:</b> 4.22 AL<br>
-        <b>ZONA:</b> Habitable | <b>ESTRELLA:</b> Enana Roja<br>
-        <span class="status-tag">IA ANALYZING</span>
+    <div class="ai-card">
+        <b>SISTEMA:</b> {target} | <b>DIST:</b> {d['dist']}<br>
+        <b>ESTRELLA:</b> {d['estrella']}<br>
+        <b>CONDICIÓN:</b> {d['hab']}<br>
+        <small style="color:#666;">ESTADO: LISTO PARA BARRIDO TÉRMICO</small>
     </div>
     """, unsafe_allow_html=True)
 
-st.write("---")
-
-# --- FRAGMENTO DE ESCANEO (LA IA EN ACCIÓN) ---
+# --- PROCESADOR DE DATOS (FRAGMENTO) ---
 @st.fragment
-def start_deep_scan():
-    col_main, col_ai = st.columns([2, 1])
+def run_ai_scanner():
+    col_viz, col_brain = st.columns([2, 1])
     
-    with col_main:
+    with col_viz:
         v_waterfall = st.empty()
         v_power = st.empty()
+        v_message = st.empty()
     
-    with col_ai:
-        st.subheader("🧠 AI HEURISTIC ENGINE")
-        v_confidence = st.empty()
-        v_description = st.empty()
-        v_terminal = st.empty()
+    with col_brain:
+        st.subheader("🧠 IA HEURÍSTICA CORE")
+        v_conf = st.empty()
+        v_desc = st.empty()
+        v_log = st.empty()
 
-    if st.button("🚀 INICIAR PROCESAMIENTO IA"):
-        pasos = 80
-        matriz = np.random.normal(0, 0.05, (pasos, 400))
-        es_alien = random.random() > 0.4
-        drift = random.uniform(-0.3, 0.3)
-        pos = random.randint(100, 300)
+    if st.button("🚀 INICIAR ESCANEO PROFUNDO"):
+        st.session_state.ai_log = ["◈ INICIANDO BARRIDO DE FRECUENCIA..."]
+        if audio_on: play_sound("noise")
         
-        add_log(f"Iniciando barrido en {target}...")
+        steps = 100
+        data_matrix = np.random.normal(0.05, 0.02, (steps, 400))
         
-        for t in range(pasos):
-            # Generar datos
-            ruido = np.random.normal(0.1, 0.05, 400)
-            if es_alien:
-                # Punto 2: Visión de máquina (Simulación de seguimiento de señal)
-                centro = int(pos + (t * drift))
-                if 0 <= centro < 400:
-                    ruido[centro] = (gain / 100) * (1 + random.random()*0.2)
-                    ruido[max(0, centro-1)] = ruido[centro] * 0.6
-                    ruido[min(399, centro+1)] = ruido[centro] * 0.6
+        prob_map = {"Tipo I": 0.25, "Tipo II": 0.55, "Tipo III": 0.85}
+        is_alien = random.random() < prob_map[k_scale]
+        drift = random.uniform(-0.25, 0.25)
+        start_px = random.randint(100, 300)
+        
+        for t in range(steps):
+            line = np.random.normal(0.05, 0.02, 400)
+            if is_alien:
+                curr_px = int(start_px + (t * drift))
+                if 0 <= curr_px < 400:
+                    line[curr_px] = (gain / 80) * (1 + random.random()*0.2)
+                    line[max(0, curr_px-1)] = line[curr_px] * 0.4
+                    line[min(399, curr_px+1)] = line[curr_px] * 0.4
             
-            matriz[t] = ruido
+            data_matrix[t] = line
             
-            # Punto 1 & 5: Heurística y Análisis de Entorno
-            conf = min(100, (t * 1.2)) if es_alien else random.randint(5, 15)
-            v_confidence.progress(conf/100, text=f"CONFIANZA DE LA IA: {conf}%")
+            # Inteligencia IA
+            conf_val = min(100, int((t/steps)*120)) if is_alien else random.randint(3, 18)
+            v_conf.progress(min(100, conf_val)/100, text=f"CONFIANZA IA: {min(100, conf_val)}%")
             
-            # Punto 3: Log Narrativo Dinámico
-            if t == 10: add_log("Detectando anomalía de banda estrecha...")
-            if t == 30 and es_alien: add_log("Confirmado: El drift Doppler coincide con rotación planetaria.")
-            if t == 60 and es_alien: add_log("Patrón detectado. Extrayendo estructura semántica...")
+            if t == 15: push_log(f"Analizando espectro en {target}...")
+            if t == 40 and is_alien: 
+                push_log("¡ALERTA! Detectada portadora de banda estrecha.")
+                if audio_on: play_sound("alien")
+            if t == 70 and is_alien: push_log("Sincronización exitosa. Extrayendo paquetes...")
 
-            # Actualizar Visualización
+            # Render Waterall
             fig1, ax1 = plt.subplots(figsize=(10, 5), facecolor='black')
-            ax1.imshow(matriz, aspect='auto', cmap='magma' if es_alien else 'viridis', origin='lower')
-            # Overlay de la IA (Recuadro de seguimiento)
-            if es_alien and t > 5:
-                rect_pos = pos + (t * drift)
-                ax1.axvspan(rect_pos-5, rect_pos+5, color='green', alpha=0.1)
+            ax1.imshow(data_matrix, aspect='auto', cmap='magma' if is_alien else 'viridis', origin='lower')
+            if is_alien and t > 20:
+                ax1.axvspan(curr_px-12, curr_px+12, color='#00FF41', alpha=0.1)
+                ax1.text(curr_px+15, t, "LOCK-ON", color='#00FF41', fontsize=8, fontweight='bold')
             ax1.axis('off')
             v_waterfall.pyplot(fig1, clear_figure=True)
             plt.close(fig1)
 
-            # Gráfico de Potencia
+            # Render Potencia
             fig2, ax2 = plt.subplots(figsize=(10, 2), facecolor='black')
-            ax2.plot(ruido, color='#00FF41' if not es_alien else '#ff3300', linewidth=1)
+            cp = '#ff0000' if is_alien and k_scale == "Tipo III" else '#00FF41'
+            ax2.plot(line, color=cp, linewidth=0.8)
+            ax2.fill_between(range(400), line, color=cp, alpha=0.1)
             ax2.set_facecolor('black')
-            ax2.set_ylim(0, 6)
+            ax2.set_ylim(0, 12)
             ax2.axis('off')
             v_power.pyplot(fig2, clear_figure=True)
             plt.close(fig2)
 
-            # Mostrar Terminal IA
-            v_terminal.markdown(f'<div class="ai-terminal">{"<br>".join(st.session_state.ai_log)}</div>', unsafe_allow_html=True)
+            # Logs y Descripción
+            v_log.markdown(f'<div class="ai-terminal">{"<br>".join(st.session_state.ai_log)}</div>', unsafe_allow_html=True)
+            ai_msg = f"IA: 'Detectada posible Tecnosignatura Tipo {k_scale}. El patrón no es natural.'" if is_alien else "IA: 'Buscando... Ruido de fondo dentro de parámetros normales.'"
+            v_desc.markdown(f'<div class="ai-description">{ai_msg}</div>', unsafe_allow_html=True)
+
+            time.sleep(0.02)
+
+        if is_alien:
+            if k_scale == "Tipo III":
+                st.markdown('<div class="critical-alert">⚠️ CONTACTO TIPO III: CIVILIZACIÓN SUPERIOR IDENTIFICADA ⚠️</div>', unsafe_allow_html=True)
             
-            # Punto 4: Bio-sensores (Descripción en tiempo real)
-            if es_alien:
-                v_description.markdown(f"""
-                <div class="ai-description">
-                    "Operador, la señal en {centro}px es de origen tecnológico. 
-                    La entropía está bajando. No es un fenómeno natural. 
-                    Coherencia confirmada en la línea de hidrógeno."
-                </div>
-                """, unsafe_allow_html=True)
-            else:
-                v_description.markdown("_Analizando ruido de fondo... Sin patrones inteligentes._")
-
-            time.sleep(0.05)
-
-        if es_alien:
+            with v_message:
+                st.subheader("📟 MATRIZ DE DATOS DECODIFICADA")
+                st.table(np.random.choice([0, 1], size=(8, 20)))
+            
+            st.session_state.historial.append({"Hora": datetime.now().strftime("%H:%M"), "Origen": target, "Escala": k_scale})
             st.balloons()
-            st.success(f"TECNOSIGNATURA CONFIRMADA EN {target}")
+        else:
+            st.info("BARRIDO COMPLETADO: No se detectaron anomalías inteligentes.")
 
-start_deep_scan()
+run_ai_scanner()
 
-# --- FOOTER ---
+# --- HISTORIAL ---
+if st.session_state.historial:
+    st.write("---")
+    st.subheader("📂 LOG DE CIVILIZACIONES DETECTADAS")
+    st.table(pd.DataFrame(st.session_state.historial))
+
+# --- FOOTER IA ---
 st.write("---")
-st.caption("NEXUS-7 v9.0 | AI Heuristic Core | Subsidaria de Deep Space Network")
+st.caption(f"NEXUS-7 v9.0 | IA Load: {random.randint(20,45)}% | Kernell: SETI-OS 2026")
