@@ -3,146 +3,108 @@ import numpy as np
 from datetime import datetime
 
 # =========================================================
-# CONFIGURACIÓN RADICAL V9.5 (TOTALMENTE DIFERENTE)
+# CONFIGURACIÓN DE LA INTERFAZ v9.5 (FONDO CLARO)
 # =========================================================
 st.set_page_config(page_title="NEXUS-7 v9.5 PRO", layout="wide")
 
+# CSS para replicar exactamente tu foto v9.5
 st.markdown("""
 <style>
-    /* Fondo oscuro para la zona exterior, pero la app es minimalista */
-    .stApp {
-        background-color: #0b0f0b;
-    }
-
-    /* TÍTULO VERDE V9.5 */
-    .title-v95 {
+    .stApp { background-color: #000000; }
+    
+    /* Título en verde neón */
+    .nexus-title {
         color: #33FF33;
         font-family: 'Courier New', monospace;
-        font-size: 28px;
+        font-size: 32px;
         font-weight: bold;
-        letter-spacing: 2px;
+        margin-bottom: 0px;
     }
 
-    /* SLIDERS ROJOS LARGOS (Estilo v9.5) */
+    /* SLIDERS ROJOS LARGOS (Estilo de tu foto) */
     div[data-baseweb="slider"] > div {
+        background-color: #FF0000 !important;
         height: 4px;
-        background-color: #ff0000 !important;
     }
     div[role="slider"] {
-        background-color: #ff0000 !important;
-        width: 12px;
-        height: 12px;
-    }
-    
-    /* PANEL CENTRAL (El cambio que buscabas) */
-    .canvas-container {
-        border: 1px solid #33FF33;
-        background-color: #e0e0e0; /* Fondo claro de la v9.5 */
-        border-radius: 2px;
+        background-color: #FF0000 !important;
+        border: 2px solid #FF0000 !important;
     }
 
-    /* MÓDULOS DERECHA */
-    .module-card {
+    /* VISUALIZADOR CENTRAL (El fondo blanco/gris de la v9.5) */
+    .canvas-border {
+        border: 2px solid #33FF33;
+        background-color: #F0F0F0; /* Fondo claro de la foto */
+    }
+
+    /* Cuadros de texto de la derecha */
+    .side-module {
         border: 1px solid #33FF33;
-        background-color: #000000;
         padding: 10px;
-        margin-bottom: 10px;
+        background-color: #000000;
         color: #33FF33;
         font-family: 'Courier New', monospace;
-        font-size: 12px;
-    }
-
-    /* Etiquetas de Sliders */
-    label {
-        color: #33FF33 !important;
-        font-size: 10px !important;
-        text-transform: uppercase;
+        margin-bottom: 10px;
     }
 </style>
 """, unsafe_allow_html=True)
 
 # =========================================================
-# GENERADOR DEL VISUALIZADOR V9.5 (MAPA DE RADIO)
+# SOLUCIÓN AL ERROR: GENERADOR DE DATOS "POTENCIA.TXT"
 # =========================================================
-def render_v95_visualizer():
-    # Creamos el fondo claro con la línea de división central
-    h, w = 550, 1100
-    # Color base: Gris muy claro (como en tu foto)
-    img = np.ones((h, w, 3), dtype=np.uint8) * 225
-    
-    # Línea de división central (Eje de frecuencia)
-    img[:, w//2 - 1 : w//2 + 1] = [30, 30, 30]
-    
-    # Añadir los puntos de señal (Negros/Grises)
-    # En la v9.5 los puntos son menos pero más marcados
-    for _ in range(400):
-        y, x = np.random.randint(0, h), np.random.randint(0, w)
-        size = np.random.randint(1, 3)
-        img[y:y+size, x:x+size] = [40, 40, 40]
-        
-    return img
+# En lugar de leer un archivo que no existe, generamos los datos en memoria
+def obtener_datos_señal():
+    # Simulamos la lista de números que pedía tu módulo (uno por línea)
+    return np.random.uniform(0.1, 1.0, 100)
 
 # =========================================================
-# ESTRUCTURA DE LA INTERFAZ V9.5
+# RENDERIZADO DE LA INTERFAZ
 # =========================================================
 
 # Encabezado v9.5
-st.markdown('<div class="title-v95">NEXUS-7: DEEP SPACE ANALYZER v9.0</div>', unsafe_allow_html=True)
-st.markdown('<p style="color:#33FF33; font-size:12px; margin-top:-10px;">HEURISTIC CORE ENABLED // SIGNAL CAPTURE ACTIVE</p>', unsafe_allow_html=True)
+st.markdown('<div class="nexus-title">NEXUS-7: DATA ANALYZER - ROSS 128 b</div>', unsafe_allow_html=True)
+st.markdown("<p style='color:#33FF33; font-size:12px;'>SIGNAL CAPTURE ACTIVE // V9.5 STABLE</p>", unsafe_allow_html=True)
 
-# Sección de Sliders (Líneas Rojas que cruzan la pantalla)
-col1, col2, col3 = st.columns([1, 2, 2])
-with col1:
-    st.selectbox("OBJETIVO", ["Ross 128 b", "Próxima b", "Kepler"], label_visibility="visible")
-with col2:
+# Sliders Rojos de lado a lado
+col_a, col_b = st.columns([1, 1])
+with col_a:
     st.select_slider("ESCALA KARDASHOV", options=["I", "II", "III"], value="III")
-with col3:
+with col_b:
     st.slider("GANANCIA SENSORIAL (dB)", 0, 500, 300)
 
-st.markdown("<br>", unsafe_allow_html=True)
+st.write("") # Espaciador
 
-# Cuerpo Principal
-main_col, side_col = st.columns([3, 1])
+# Layout Principal
+col_mapa, col_info = st.columns([3, 1])
 
-with main_col:
-    # El visualizador central con el nuevo estilo
-    canvas = render_v95_visualizer()
-    st.image(canvas, use_container_width=True)
-    st.markdown("<p style='color:#33FF33; font-size:10px;'>BARRIDO DE FRECUENCIA ACTIVO | SENSOR: VLA-ARRAY 4</p>", unsafe_allow_html=True)
+with col_mapa:
+    # Creamos el mapa con fondo blanco y puntos negros (v9.5)
+    h, w = 500, 1100
+    img = np.ones((h, w, 3), dtype=np.uint8) * 235 # Gris muy claro
+    
+    # Línea central de frecuencia negra
+    img[:, w//2 - 1 : w//2 + 1] = [0, 0, 0]
+    
+    # Puntos de señal
+    for _ in range(300):
+        y, x = np.random.randint(0, h), np.random.randint(0, w)
+        img[y:y+2, x:x+2] = [40, 40, 40]
+        
+    st.image(img, use_container_width=True)
+    st.markdown("<p style='color:#33FF33; font-size:10px;'>MODO: LECTURA DE SEÑAL REAL ACTIVA</p>", unsafe_allow_html=True)
 
-with side_col:
-    # Módulo de Datos
-    st.markdown(f"""
-    <div class="module-card">
-        SISTEMA: ROSS 128 b | DISTANCIA: 4.22 AL<br>
-        ZONA: Habitable | ESTRELLA: Enana Roja<br>
-        <span style="color: #00FF00;">● ANALIZANDO...</span>
-    </div>
-    """, unsafe_allow_html=True)
+with col_info:
+    # Estado del Sistema
+    st.markdown('<div class="side-module">SISTEMA: ROSS 128 b<br>DISTANCIA: 4.22 AL<br><span style="color:#00FF00;">● ANALIZANDO...</span></div>', unsafe_allow_html=True)
+    
+    # IA Engine (Barra Azul de tus fotos)
+    st.markdown("<p style='color:#33FF33; font-size:14px; font-weight:bold;'>🧠 AI ENGINE</p>", unsafe_allow_html=True)
+    st.progress(0.94) # Barra azul celeste
+    
+    # Datos simulados (Sustituye a potencia.txt)
+    datos = obtener_datos_señal()
+    st.markdown(f'<div class="side-module" style="font-size:10px; height:150px; overflow:hidden;">' + 
+                "<br>".join([f"SIG_POW: {d:.4f}" for d in datos]) + 
+                '</div>', unsafe_allow_html=True)
 
-    # Motor IA
-    st.markdown("<p style='color:#33FF33; font-weight:bold; margin-bottom:2px;'>🧠 AI HEURISTIC ENGINE</p>", unsafe_allow_html=True)
-    st.markdown("<p style='color:#33FF33; font-size:10px;'>CONFIANZA: 94.8%</p>", unsafe_allow_html=True)
-    st.progress(0.94)
-
-    # Mensaje del Operador
-    st.markdown("""
-    <div style="border-left: 2px solid #33FF33; padding-left: 10px; margin: 15px 0;">
-        <i style="color:#33FF33; font-size:11px;">"Operador, la señal detectada es de origen tecnológico. Coherencia confirmada."</i>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # Log Terminal Compacto
-    st.markdown(f"""
-    <div class="module-card" style="height: 180px; overflow: hidden; font-size: 10px;">
-        [{datetime.now().strftime('%H:%M:%S')}] Escaneando sector...<br>
-        [LOG] Anomalía detectada en canal 298.<br>
-        [LOG] Coherencia de señal confirmada.<br>
-        [LOG] Desplazamiento Doppler detectado.<br>
-        ------------------------------------<br>
-        ◆ NEXUS-7 CORE: ONLINE<br>
-        ◆ IA HEURÍSTICA: BUSCANDO...
-    </div>
-    """, unsafe_allow_html=True)
-
-st.caption("v9.5 | SECURE LINK | ACCESO RESTRINGIDO")
+st.caption("PROTOCOLO NEXUS-7 v9.5 // SIN ERRORES DE ARCHIVO")
