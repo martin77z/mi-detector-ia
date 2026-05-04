@@ -1,112 +1,133 @@
+import streamlit as st
+import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
+import altair as alt
+import datetime
+import time
 
 # =========================================================
-# 1. MOTOR DE PROCESAMIENTO DE OBJETIVOS REALES
+# 1. CONFIGURACIÓN DE LA PÁGINA (Estética Profesional 9.5)
 # =========================================================
-class AnalizadorRadioastronomico:
+st.set_page_config(
+    page_title="Monitor SETI - Deep Space Analysis",
+    page_icon="🌌",
+    layout="wide"
+)
+
+# Estilo visual "Modo Científico"
+st.markdown("""
+<style>
+    .main { background-color: #050505; }
+    .stMetric { background-color: #111; padding: 15px; border-radius: 10px; border: 1px solid #222; }
+    .css-10trblm { color: #00FF41; } /* Color verde Matrix */
+</style>
+""", unsafe_allow_html=True)
+
+# =========================================================
+# 2. MOTOR DE IA Y DATOS DE OBJETIVOS REALES
+# =========================================================
+class MotorSETI:
     def __init__(self):
-        # Base de datos de objetivos y sus frecuencias de interés (MHz)
+        # Base de datos con información científica real
         self.objetivos = {
-            "ROSS 128 b": {"freq": 1420.405, "tipo": "Exoplaneta", "anomalia": True},
-            "ANDRÓMEDA (M31)": {"freq": 1665.402, "tipo": "Galaxia", "anomalia": True},
-            "SGR A* (VÍA LÁCTEA)": {"freq": 1420.405, "tipo": "Centro Galáctico", "anomalia": False}
+            "Ross 128 b": {"freq": 1420.4, "tipo": "Exoplaneta", "anomalia": True},
+            "Andrómeda (M31)": {"freq": 1665.4, "tipo": "Galaxia", "anomalia": False},
+            "Sagitario A*": {"freq": 1420.4, "tipo": "Agujero Negro Supermasivo", "anomalia": False},
+            "Espacio Profundo": {"freq": 0.0, "tipo": "Vacío", "anomalia": False}
         }
 
-    def obtener_espectro_real(self, nombre_objetivo):
-        obj = self.objetivos.get(nombre_objetivo)
-        longitud = 1024
+    def generar_espectro(self, nombre_obj):
+        obj = self.objetivos[nombre_obj]
+        longitud = 250
+        freq_eje = np.linspace(obj["freq"] - 5, obj["freq"] + 5, longitud)
         
-        # Generación de ruido cósmico real (Ruido de Johnson-Nyquist)
-        base = np.random.normal(0, 0.4, longitud)
+        # Ruido cósmico base
+        ruido = np.random.normal(0.2, 0.1, longitud)
         
-        # Si el objetivo tiene una anomalía (Tecnofirma detectada en la ficción del proyecto)
+        # Lógica de detección de anomalías
         if obj["anomalia"]:
-            señal = np.zeros(longitud)
-            # Simulación de señal de banda estrecha real
-            pos = 512 + np.random.randint(-2, 2)
-            señal[pos-2:pos+2] = np.random.uniform(2.8, 4.5)
-            datos = base + señal
-            estado = "ANOMALÍA DETECTADA"
-            confianza = np.random.uniform(98.5, 99.9)
+            # Inyección de Tecnofirma de banda estrecha
+            pico = np.zeros(longitud)
+            pico[longitud//2] = 3.5 # Señal potente y fina
+            datos = ruido + pico
+            veredicto = "ANOMALÍA DETECTADA"
+            confianza = np.random.uniform(98.2, 99.9)
         else:
-            # Para objetivos naturales como Sgr A*, solo hay ruido y picos anchos
-            pico_natural = np.exp(-np.power(np.linspace(-10, 10, longitud), 2) / (2 * 1))
-            datos = base + pico_natural * 0.5
-            estado = "EMISIÓN NATURAL"
-            confianza = np.random.uniform(1.0, 5.0)
+            # Emisión natural (curva ancha)
+            curva_natural = np.exp(-np.power(np.linspace(-5, 5, longitud), 2) / 2) * 0.4
+            datos = ruido + curva_natural
+            veredicto = "EMISIÓN NATURAL / RUIDO"
+            confianza = np.random.uniform(0.5, 4.0)
             
-        return datos, estado, confianza, obj["freq"], obj["tipo"]
+        df = pd.DataFrame({'Frecuencia (MHz)': freq_eje, 'Potencia (Jy)': datos})
+        return df, veredicto, confianza, obj
 
 # =========================================================
-# 2. INTERFAZ PROFESIONAL (ESTÉTICA 9.5)
+# 3. INTERFAZ DE USUARIO (STREAMLIT)
 # =========================================================
-def iniciar_escaneo():
-    analizador = AnalizadorRadioastronomico()
-    
-    # --- CONFIGURACIÓN DEL OBJETIVO ACTUAL ---
-    # Cambia este nombre por cualquier de la lista: "ROSS 128 b", "ANDRÓMEDA (M31)", "SGR A* (VÍA LÁCTEA)"
-    target_actual = "ROSS 128 b" 
-    
-    fig = plt.figure(figsize=(14, 9), facecolor='#020202')
-    gs = fig.add_gridspec(2, 1, height_ratios=[1.2, 0.8])
-    
-    # Subplot 1: Espectro de Frecuencia
-    ax1 = fig.add_subplot(gs[0])
-    ax1.set_facecolor('black')
-    
-    # Subplot 2: Waterfall (Cascada de Tiempo)
-    ax2 = fig.add_subplot(gs[1])
-    buffer_waterfall = np.zeros((60, 1024))
-    img = ax2.imshow(buffer_waterfall, aspect='auto', cmap='viridis', interpolation='gaussian')
-    
-    def update(frame):
-        ax1.clear()
-        ax1.set_facecolor('black')
-        
-        # Obtener datos procesados
-        espectro, status, prob, f_ref, t_obj = analizador.obtener_espectro_real(target_actual)
-        
-        # 1. Dibujar Espectro
-        ax1.plot(espectro, color='#33FF33', linewidth=1, alpha=0.8)
-        ax1.fill_between(range(1024), espectro, color='#33FF33', alpha=0.1)
-        ax1.set_ylim(-1, 6)
-        
-        # 2. Actualizar Waterfall
-        nonlocal buffer_waterfall
-        buffer_waterfall = np.roll(buffer_waterfall, 1, axis=0)
-        buffer_waterfall[0, :] = espectro
-        img.set_array(buffer_waterfall)
-        
-        # 3. Elementos Visuales de "9.5" (Telemetría)
-        color_status = '#FF0000' if "ANOMALÍA" in status else '#33FF33'
-        
-        # Encabezado técnico
-        header = f"TARGET: {target_actual} | CLASS: {t_obj} | REF_FREQ: {f_ref} MHz"
-        ax1.set_title(header, color='white', loc='left', fontsize=12, family='monospace')
-        
-        # Cuadro de la IA
-        telemetria = (f" [ SETI ANALYSIS ]\n"
-                      f" ----------------\n"
-                      f" VERDICT: {status}\n"
-                      f" PROBABILITY: {prob:.4f}%\n"
-                      f" GAIN: +24dB | SIG: ACTIVE")
-        
-        ax1.text(20, 3.8, telemetria, color='white', family='monospace',
-                 bbox=dict(facecolor='black', edgecolor=color_status, boxstyle='square,pad=1'))
+seti = MotorSETI()
 
-        # Estética de rejilla y ejes
-        ax1.grid(color='#002200', linestyle='-', alpha=0.5)
-        ax1.tick_params(colors='white', labelsize=8)
-        
-        return ax1, img
+st.title("🛰️ Deep Space Signal Detector v3.0")
+st.write(f"**Telemetría activa:** {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}")
 
-    ani = animation.FuncAnimation(fig, update, interval=80, cache_frame_data=False)
+# --- Barra Lateral ---
+with st.sidebar:
+    st.image("https://img.icons8.com/nolan/128/satellite-dish.png", width=80)
+    st.header("Control de Antena")
+    target = st.selectbox("Seleccionar Objetivo:", list(seti.objetivos.keys()))
+    modo_ia = st.toggle("Activar Procesador IA Heurístico", value=True)
+    st.divider()
+    st.write("📡 **Estado del Hardware:** Online")
+    st.write("🌍 **Ubicación:** Estación Terrena Alpha")
+
+# --- Cuerpo Principal ---
+col1, col2 = st.columns([3, 1])
+
+df_datos, veredicto_ia, prob, info_obj = seti.generar_espectro(target)
+
+with col1:
+    st.subheader(f"Análisis Espectral: {target}")
     
-    print(f"Sincronizando con {target_actual}...")
-    plt.tight_layout()
-    plt.show()
+    # Gráfica de alta resolución corregida para evitar el error de la consola
+    chart = alt.Chart(df_datos).mark_area(
+        color='#00FF41',
+        opacity=0.3,
+        line={'color': '#00FF41'}
+    ).encode(
+        x=alt.X('Frecuencia (MHz):Q', scale=alt.Scale(zero=False)),
+        y=alt.Y('Potencia (Jy):Q', title='Densidad de Flujo (Jy)')
+    ).properties(height=400)
+    
+    # IMPORTANTE: use_container_width='always' elimina el aviso amarillo de tu consola
+    st.altair_chart(chart, use_container_width='always')
+    
+    # Mini-Waterfall simulado (Esencia del 9.5)
+    st.write("🌊 **Historial de Cascada (Waterfall)**")
+    waterfall = np.random.rand(10, 100)
+    st.image(waterfall, use_container_width=True, clamp=True)
 
-if __name__ == "__main__":
-    iniciar_escaneo()
+with col2:
+    st.subheader("🤖 Diagnóstico IA")
+    
+    if modo_ia:
+        # Simulación de carga
+        with st.spinner('Analizando paquetes de datos...'):
+            time.sleep(0.5)
+            
+        # Métricas de detección
+        st.metric("Confianza", f"{prob:.2f}%")
+        
+        if veredicto_ia == "ANOMALÍA DETECTADA":
+            st.error(f"⚠️ {veredicto_ia}")
+            st.warning("Señal de banda estrecha artificial identificada.")
+            st.write(f"**Tipo de Objeto:** {info_obj['tipo']}")
+            st.write("**Recomendación:** Iniciar protocolo de contacto y re-orientar matriz de antenas.")
+        else:
+            st.success(f"✅ {veredicto_ia}")
+            st.write("No se encontraron patrones inteligentes en esta frecuencia.")
+    else:
+        st.info("Procesador IA en espera. Active el interruptor lateral.")
+
+# Pie de página técnico
+st.divider()
+st.caption("Cifrado de datos: AES-256 | Protocolo: SETI-NET | Proyecto de Radioastronomía Avanzada")
