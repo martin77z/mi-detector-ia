@@ -1,112 +1,115 @@
 import streamlit as st
-import pandas as pd
 import numpy as np
-import altair as alt
-import datetime
+import pandas as pd
+import time
+from datetime import datetime
 
 # =========================================================
-# 1. ESTILO DE ALTO IMPACTO (RECUPERANDO LA ESENCIA 9.5)
+# 1. CONFIGURACIÓN Y ESTILO NEXUS-7 (LOOK MILITAR)
 # =========================================================
-st.set_page_config(page_title="SETI CONTROL PANEL v9.5", layout="wide")
+st.set_page_config(page_title="NEXUS-7: DEEP SPACE ANALYZER", layout="wide")
 
-# CSS para inyectar el look de "Terminal de Laboratorio"
 st.markdown("""
 <style>
-    body { background-color: #000000; color: #00FF41; }
-    .reportview-container { background: #000000; }
-    .stMetric { 
-        background-color: #0a0a0a; 
-        border: 1px solid #00FF41; 
-        border-radius: 0px; 
-        padding: 10px;
+    .main { background-color: #000000; }
+    .stMetric { background-color: #000000; border: 1px solid #33FF33; }
+    .stProgress > div > div > div > div { background-color: #33FF33; }
+    section[data-testid="stSidebar"] { background-color: #050505; }
+    .status-box {
+        border: 2px solid #33FF33;
+        padding: 15px;
+        border-radius: 5px;
+        background-color: #001100;
+        color: #33FF33;
+        font-family: 'Courier New', monospace;
     }
-    h1, h2, h3 { color: #00FF41 !important; font-family: 'Courier New', Courier, monospace; }
-    .stAlert { background-color: #000000; color: #00FF41; border: 1px solid #00FF41; }
+    .terminal-log {
+        border: 1px solid #33FF33;
+        padding: 10px;
+        background-color: #000800;
+        color: #33FF33;
+        font-family: 'Courier New', monospace;
+        font-size: 12px;
+        height: 250px;
+        overflow-y: hidden;
+    }
 </style>
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 2. MOTOR DE DATOS CRUDOS
+# 2. LÓGICA DE DATOS (RECONSTRUCCIÓN DE SEÑAL)
 # =========================================================
-class AnalizadorPro:
-    def __init__(self):
-        self.targets = {
-            "ROSS 128 b": {"f": 1420.405, "desc": "Exoplaneta - Zona Habitable", "status": "ANOMALÍA"},
-            "ANDRÓMEDA": {"f": 1665.402, "desc": "M31 - Región H II", "status": "NATURAL"}
-        }
-
-    def generar_espectro_v95(self, nombre):
-        t = self.targets[nombre]
-        x = np.linspace(t['f']-2, t['f']+2, 400)
-        # Ruido mucho más fino y detallado
-        ruido = np.random.normal(0.5, 0.15, 400)
-        
-        if t['status'] == "ANOMALÍA":
-            # La señal ahora es un pulso ultra-fino de alta energía
-            pico = np.zeros(400)
-            pico[200] = 4.5
-            datos = ruido + pico
-            color_hex = "#00FF41" # Verde neón
-        else:
-            datos = ruido + (np.exp(-np.power(x - t['f'], 2) / 0.5) * 0.5)
-            color_hex = "#33CCFF" # Azul científico
-            
-        return pd.DataFrame({'f': x, 'p': datos}), color_hex, t
+def generar_waterfall_nexus():
+    # Creamos el efecto de la línea inclinada (Drift Doppler) que se ve en tu foto
+    rows, cols = 400, 600
+    data = np.random.normal(50, 15, (rows, cols))
+    
+    # Inyección de la señal inclinada (la línea naranja/blanca de la foto)
+    for i in range(rows):
+        pos = 350 + int(i * 0.1) # La inclinación
+        data[i, pos-2:pos+3] = 255 # Brillo máximo
+    return data
 
 # =========================================================
-# 3. INTERFAZ DE COMANDO (LAYOUT DE INGENIERÍA)
+# 3. INTERFAZ NEXUS-7 (ESTRUCTURA DE TU FOTO)
 # =========================================================
-proc = AnalizadorPro()
 
-# Encabezado técnico
-c_head1, c_head2 = st.columns([4, 1])
-with c_head1:
-    st.title("📟 SETI GLOBAL NETWORK | STATION ALPHA-9")
-    st.write(f"SYSTEM_READY // UTC_SYNCHRONIZED: {datetime.datetime.now()}")
-with c_head2:
-    target_sel = st.selectbox("SELECT_TARGET", list(proc.targets.keys()))
+# Título Principal Neón
+st.markdown("<h1 style='color: #33FF33; font-family: monospace;'>NEXUS-7: DEEP SPACE ANALYZER v9.0</h1>", unsafe_allow_html=True)
+st.write("HEURISTIC CORE ENABLED // SIGNAL CAPTURE ACTIVE")
+
+# Fila Superior: Controles (Sliders como en la foto)
+col_input1, col_input2, col_input3 = st.columns([2, 2, 3])
+with col_input1:
+    objetivo = st.selectbox("OBJETIVO", ["Próxima b", "Ross 128 b", "Andrómeda"])
+with col_input2:
+    st.select_slider("ESCALA KARDASHOV", options=["Tipo I", "Tipo II", "Tipo III"], value="Tipo I")
+with col_input3:
+    ganancia = st.slider("GANANCIA SENSORIAL (dB)", 0, 500, 300)
 
 st.divider()
 
-# Grid principal
-col_main, col_side = st.columns([3, 1])
+# Fila Central: Visualizador y Panel de IA
+col_viz, col_ia = st.columns([2, 1])
 
-df, color_main, info = proc.generar_espectro_v95(target_sel)
+with col_viz:
+    # El Waterfall grande que ocupa el centro
+    wf_data = generar_waterfall_nexus()
+    st.image(wf_data, use_container_width=True, clamp=True)
+    st.caption("ESPECTRO DE BANDA BASE - FRECUENCIA CENTRAL: 1420.405 MHz")
 
-with col_main:
-    # Gráfica con look de osciloscopio
-    chart = alt.Chart(df).mark_line(
-        color=color_main, 
-        strokeWidth=1.5,
-        opacity=0.9
-    ).encode(
-        x=alt.X('f:Q', title='FREQUENCY (MHz)', scale=alt.Scale(zero=False)),
-        y=alt.Y('p:Q', title='INTENSITY (dBm)', scale=alt.Scale(domain=[0, 6]))
-    ).properties(height=450)
+with col_ia:
+    # Cuadro de Info del Sistema
+    st.markdown(f"""
+    <div class="status-box">
+        SISTEMA: {objetivo} | DISTANCIA: 4.22 AL<br>
+        ZONA: Habitable | ESTRELLA: Enana Roja<br>
+        <span style="color: #FF3333;">● ANALIZANDO</span>
+    </div>
+    """, unsafe_allow_html=True)
     
-    # Capa de área para dar volumen
-    area = chart.mark_area(opacity=0.1, fill=color_main)
+    st.markdown("### 🧠 AI HEURISTIC ENGINE")
+    st.write("CONFIANZA DE LA IA: 94.8%")
+    st.progress(94)
     
-    st.altair_chart(area + chart, use_container_width=True)
+    # El mensaje del operador (el texto en cursiva verde)
+    st.info("""
+    *"Operador, la señal en 298px es de origen tecnológico. La entropía está bajando. No es un fenómeno natural. 
+    Coherencia confirmada en la línea de Hidrógeno."*
+    """)
     
-    # Telemetría de flujo (Waterfall mejorado)
-    st.write("▼ LIVE_WATERFALL_BUFFER_095")
-    waterfall = np.random.normal(0.5, 0.2, (15, 100))
-    st.image(waterfall, use_container_width=True, clamp=True)
+    # Terminal Log (El cuadro de logs de la derecha)
+    st.markdown(f"""
+    <div class="terminal-log">
+        [00:22:02] Patrón detectado. Extrayendo estructura semántica...<br>
+        [00:23:50] Confirmado: El drift doppler coincide con rotación planetaria.<br>
+        [00:21:43] Detectando anomalía de banda estrecha...<br>
+        [00:21:39] Iniciando barrido en Próxima b...<br>
+        ◆ SISTEMA NEXUS-7 INICIALIZADO...<br>
+        ◆ IA HEURÍSTICA ONLINE.
+    </div>
+    """, unsafe_allow_html=True)
 
-with col_side:
-    st.subheader("SYSTEM_LOG")
-    st.metric("SIGNAL_STRENGTH", f"{np.max(df['p']):.2f} dB", delta="0.04% ▲")
-    st.metric("CONFIDENCE_INDEX", "99.98%" if info['status'] == "ANOMALÍA" else "4.12%")
-    
-    st.write(f"**OBJECT:** {target_sel}")
-    st.write(f"**CLASS:** {info['desc']}")
-    
-    if info['status'] == "ANOMALÍA":
-        st.error("⚠️ TECNOFIRMA DETECTADA")
-        st.info("PROBABILITY: EXTRATERRESTRIAL_ORIGIN")
-    else:
-        st.success("✅ EMISIÓN NATURAL")
-
-st.divider()
-st.caption("CORE_VERSION: 9.5_LEGACY | ENCRYPTED_LINK: ACTIVE | NO_ERRORS_DETECTED")
+# Footer técnico
+st.write("---")
+st.caption(f"TELEMETRÍA ACTUALIZADA: {datetime.now().strftime('%H:%M:%S')} UTC | ENCRIPTACIÓN DE DATOS: AES-256")
