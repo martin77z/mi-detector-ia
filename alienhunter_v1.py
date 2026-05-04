@@ -3,25 +3,24 @@ import numpy as np
 from datetime import datetime
 
 # =========================================================
-# CONFIGURACIÓN DE LA INTERFAZ v9.5 (FONDO CLARO)
+# CONFIGURACIÓN TÉCNICA v9.5 (RESPETANDO TU INTERFAZ)
 # =========================================================
 st.set_page_config(page_title="NEXUS-7 v9.5 PRO", layout="wide")
 
-# CSS para replicar exactamente tu foto v9.5
+# Mantenemos el fondo negro de la app y los sliders rojos de tu foto
 st.markdown("""
 <style>
     .stApp { background-color: #000000; }
     
-    /* Título en verde neón */
+    /* Título idéntico a tu captura 4a627e8b-fee7-4a0c-9019-9f0ea2d4acb0 */
     .nexus-title {
         color: #33FF33;
         font-family: 'Courier New', monospace;
         font-size: 32px;
         font-weight: bold;
-        margin-bottom: 0px;
     }
 
-    /* SLIDERS ROJOS LARGOS (Estilo de tu foto) */
+    /* Sliders rojos que cruzan la pantalla (v9.5) */
     div[data-baseweb="slider"] > div {
         background-color: #FF0000 !important;
         height: 4px;
@@ -31,80 +30,85 @@ st.markdown("""
         border: 2px solid #FF0000 !important;
     }
 
-    /* VISUALIZADOR CENTRAL (El fondo blanco/gris de la v9.5) */
-    .canvas-border {
-        border: 2px solid #33FF33;
-        background-color: #F0F0F0; /* Fondo claro de la foto */
-    }
-
-    /* Cuadros de texto de la derecha */
+    /* Módulos laterales con el borde verde neón */
     .side-module {
-        border: 1px solid #33FF33;
+        border: 2px solid #33FF33;
         padding: 10px;
         background-color: #000000;
         color: #33FF33;
         font-family: 'Courier New', monospace;
         margin-bottom: 10px;
     }
+
+    /* Barra de progreso azul cielo de la IA */
+    .stProgress > div > div > div > div {
+        background-color: #33CCFF;
+    }
 </style>
 """, unsafe_allow_html=True)
 
 # =========================================================
-# SOLUCIÓN AL ERROR: GENERADOR DE DATOS "POTENCIA.TXT"
+# FUNCIÓN DEL VISUALIZADOR (Aquí cambias el color)
 # =========================================================
-# En lugar de leer un archivo que no existe, generamos los datos en memoria
-def obtener_datos_señal():
-    # Simulamos la lista de números que pedía tu módulo (uno por línea)
-    return np.random.uniform(0.1, 1.0, 100)
+def generar_visualizador_v95():
+    h, w = 500, 1100
+    # CAMBIO DE COLOR: Cambia el 20 por el valor que quieras (0=negro, 255=blanco)
+    # He puesto un gris muy oscuro para que resalten los puntos
+    color_fondo = 15 
+    img = np.ones((h, w, 3), dtype=np.uint8) * color_fondo
+    
+    # Línea central de división (v9.5)
+    img[:, w//2 - 1 : w//2 + 1] = [51, 255, 51] # Verde neón
+    
+    # Puntos de señal tipo v9.5
+    for _ in range(400):
+        y, x = np.random.randint(0, h), np.random.randint(0, w)
+        img[y:y+2, x:x+2] = [51, 255, 51] # Puntos verdes
+        
+    return img
 
 # =========================================================
-# RENDERIZADO DE LA INTERFAZ
+# ESTRUCTURA DE LA INTERFAZ (Tu diseño original)
 # =========================================================
 
-# Encabezado v9.5
+# Encabezado (visto en 4a627e8b-fee7-4a0c-9019-9f0ea2d4acb0)
 st.markdown('<div class="nexus-title">NEXUS-7: DATA ANALYZER - ROSS 128 b</div>', unsafe_allow_html=True)
 st.markdown("<p style='color:#33FF33; font-size:12px;'>SIGNAL CAPTURE ACTIVE // V9.5 STABLE</p>", unsafe_allow_html=True)
 
-# Sliders Rojos de lado a lado
-col_a, col_b = st.columns([1, 1])
-with col_a:
+# Sección de Sliders Rojos
+col_1, col_2 = st.columns([1, 1])
+with col_1:
     st.select_slider("ESCALA KARDASHOV", options=["I", "II", "III"], value="III")
-with col_b:
+with col_2:
     st.slider("GANANCIA SENSORIAL (dB)", 0, 500, 300)
 
-st.write("") # Espaciador
-
 # Layout Principal
-col_mapa, col_info = st.columns([3, 1])
+col_main, col_info = st.columns([3, 1])
 
-with col_mapa:
-    # Creamos el mapa con fondo blanco y puntos negros (v9.5)
-    h, w = 500, 1100
-    img = np.ones((h, w, 3), dtype=np.uint8) * 235 # Gris muy claro
-    
-    # Línea central de frecuencia negra
-    img[:, w//2 - 1 : w//2 + 1] = [0, 0, 0]
-    
-    # Puntos de señal
-    for _ in range(300):
-        y, x = np.random.randint(0, h), np.random.randint(0, w)
-        img[y:y+2, x:x+2] = [40, 40, 40]
-        
-    st.image(img, use_container_width=True)
+with col_main:
+    # Mostramos el visualizador con el nuevo fondo
+    grafico = generar_visualizador_v95()
+    st.image(grafico, use_container_width=True) # Evita el error de la foto 177123_2.jpg
     st.markdown("<p style='color:#33FF33; font-size:10px;'>MODO: LECTURA DE SEÑAL REAL ACTIVA</p>", unsafe_allow_html=True)
 
 with col_info:
-    # Estado del Sistema
+    # Bloque de datos del sistema
     st.markdown('<div class="side-module">SISTEMA: ROSS 128 b<br>DISTANCIA: 4.22 AL<br><span style="color:#00FF00;">● ANALIZANDO...</span></div>', unsafe_allow_html=True)
     
-    # IA Engine (Barra Azul de tus fotos)
+    # Motor IA con la barra azul
     st.markdown("<p style='color:#33FF33; font-size:14px; font-weight:bold;'>🧠 AI ENGINE</p>", unsafe_allow_html=True)
-    st.progress(0.94) # Barra azul celeste
+    st.progress(0.94)
     
-    # Datos simulados (Sustituye a potencia.txt)
-    datos = obtener_datos_señal()
-    st.markdown(f'<div class="side-module" style="font-size:10px; height:150px; overflow:hidden;">' + 
-                "<br>".join([f"SIG_POW: {d:.4f}" for d in datos]) + 
-                '</div>', unsafe_allow_html=True)
+    # Log Terminal (evitando el error potencia.txt de la foto 86f4b17b...)
+    st.markdown(f'''
+    <div class="side-module" style="font-size:10px; height:200px; overflow:hidden;">
+        [{datetime.now().strftime('%H:%M:%S')}] Iniciando lectura...<br>
+        [LOG] Coherencia de señal: 98.2%<br>
+        [LOG] Frecuencia: 1420.40 MHz<br>
+        -----------------------------<br>
+        ◆ NEXUS-7 CORE: ONLINE<br>
+        ◆ IA: BUSCANDO TECNOFIRMAS...
+    </div>
+    ''', unsafe_allow_html=True)
 
-st.caption("PROTOCOLO NEXUS-7 v9.5 // SIN ERRORES DE ARCHIVO")
+st.caption("v9.5 | SECURE LINK | ACCESO RESTRINGIDO")
