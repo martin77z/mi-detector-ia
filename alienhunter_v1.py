@@ -1,115 +1,132 @@
 import streamlit as st
 import numpy as np
 import pandas as pd
-import time
 from datetime import datetime
 
 # =========================================================
-# 1. CONFIGURACIÓN Y ESTILO NEXUS-7 (LOOK MILITAR)
+# 1. FORZADO DE MODO OSCURO (ESENCIA NEXUS-7)
 # =========================================================
 st.set_page_config(page_title="NEXUS-7: DEEP SPACE ANALYZER", layout="wide")
 
+# Este bloque de CSS es el más importante: fuerza el fondo NEGRO y textos VERDES
 st.markdown("""
 <style>
-    .main { background-color: #000000; }
-    .stMetric { background-color: #000000; border: 1px solid #33FF33; }
-    .stProgress > div > div > div > div { background-color: #33FF33; }
-    section[data-testid="stSidebar"] { background-color: #050505; }
+    /* Forzar fondo negro en toda la app */
+    .stApp {
+        background-color: #000000;
+    }
+    header, .stToolbar {
+        background-color: #000000 !important;
+    }
+    /* Estilo para los textos y títulos */
+    h1, h2, h3, p, span, label {
+        color: #33FF33 !important;
+        font-family: 'Courier New', Courier, monospace !important;
+    }
+    /* Estilo para los cuadros de la derecha */
     .status-box {
         border: 2px solid #33FF33;
         padding: 15px;
-        border-radius: 5px;
         background-color: #001100;
-        color: #33FF33;
-        font-family: 'Courier New', monospace;
+        margin-bottom: 20px;
     }
     .terminal-log {
         border: 1px solid #33FF33;
         padding: 10px;
         background-color: #000800;
-        color: #33FF33;
-        font-family: 'Courier New', monospace;
-        font-size: 12px;
         height: 250px;
-        overflow-y: hidden;
+        font-size: 11px;
+        line-height: 1.4;
     }
+    /* Estilo para los sliders */
+    .stSlider label { color: #33FF33 !important; }
 </style>
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 2. LÓGICA DE DATOS (RECONSTRUCCIÓN DE SEÑAL)
+# 2. GENERADOR DE MAPA ESTELAR / WATERFALL
 # =========================================================
-def generar_waterfall_nexus():
-    # Creamos el efecto de la línea inclinada (Drift Doppler) que se ve en tu foto
-    rows, cols = 400, 600
-    data = np.random.normal(50, 15, (rows, cols))
+def generar_espacio_profundo():
+    # Creamos un fondo negro con "estrellas" (puntos blancos) como en tu foto
+    width, height = 800, 500
+    img = np.zeros((height, width))
+    # Añadimos ruido aleatorio (estrellas)
+    num_estrellas = 150
+    for _ in range(num_estrellas):
+        y = np.random.randint(0, height)
+        x = np.random.randint(0, width)
+        img[y-1:y+1, x-1:x+1] = 255
     
-    # Inyección de la señal inclinada (la línea naranja/blanca de la foto)
-    for i in range(rows):
-        pos = 350 + int(i * 0.1) # La inclinación
-        data[i, pos-2:pos+3] = 255 # Brillo máximo
-    return data
+    # Inyectamos la señal inclinada característica del NEXUS-7
+    for i in range(height):
+        pos = 450 + int(i * 0.05) 
+        if pos < width:
+            img[i, pos-1:pos+2] = 200 # Señal de tecnofirma
+    return img
 
 # =========================================================
-# 3. INTERFAZ NEXUS-7 (ESTRUCTURA DE TU FOTO)
+# 3. INTERFAZ DE COMANDO NEXUS-7
 # =========================================================
 
-# Título Principal Neón
-st.markdown("<h1 style='color: #33FF33; font-family: monospace;'>NEXUS-7: DEEP SPACE ANALYZER v9.0</h1>", unsafe_allow_html=True)
-st.write("HEURISTIC CORE ENABLED // SIGNAL CAPTURE ACTIVE")
+# Título Principal
+st.markdown("<h1 style='text-align: left;'>NEXUS-7: DEEP SPACE ANALYZER v9.0</h1>", unsafe_allow_html=True)
+st.markdown("<p style='margin-top: -20px;'>HEURISTIC CORE ENABLED // SIGNAL CAPTURE ACTIVE</p>", unsafe_allow_html=True)
 
-# Fila Superior: Controles (Sliders como en la foto)
-col_input1, col_input2, col_input3 = st.columns([2, 2, 3])
-with col_input1:
-    objetivo = st.selectbox("OBJETIVO", ["Próxima b", "Ross 128 b", "Andrómeda"])
-with col_input2:
-    st.select_slider("ESCALA KARDASHOV", options=["Tipo I", "Tipo II", "Tipo III"], value="Tipo I")
-with col_input3:
-    ganancia = st.slider("GANANCIA SENSORIAL (dB)", 0, 500, 300)
+# Fila Superior: Selectores
+c1, c2, c3 = st.columns([2, 2, 3])
+with c1:
+    target = st.selectbox("OBJETIVO", ["Ross 128 b", "Próxima b", "Kepler-186f"])
+with c2:
+    st.select_slider("ESCALA KARDASHOV", options=["Tipo I", "Tipo II", "Tipo III"])
+with c3:
+    st.slider("GANANCIA SENSORIAL (dB)", 0, 500, 300)
 
-st.divider()
+st.markdown("<hr style='border: 1px solid #33FF33;'>", unsafe_allow_html=True)
 
-# Fila Central: Visualizador y Panel de IA
-col_viz, col_ia = st.columns([2, 1])
+# Cuerpo Principal
+col_mapa, col_info = st.columns([2.5, 1])
 
-with col_viz:
-    # El Waterfall grande que ocupa el centro
-    wf_data = generar_waterfall_nexus()
-    st.image(wf_data, use_container_width=True, clamp=True)
-    st.caption("ESPECTRO DE BANDA BASE - FRECUENCIA CENTRAL: 1420.405 MHz")
+with col_mapa:
+    # Mostramos el mapa estelar con fondo negro
+    espacio = generar_espacio_profundo()
+    st.image(espacio, use_container_width=True, clamp=True)
+    st.caption("SCANNER_MODE: BANDA ESTRECHA | FREQ_LOCK: 1420.405 MHz")
 
-with col_ia:
-    # Cuadro de Info del Sistema
+with col_info:
+    # Cuadro de Sistema (Superior Derecha)
     st.markdown(f"""
     <div class="status-box">
-        SISTEMA: {objetivo} | DISTANCIA: 4.22 AL<br>
+        SISTEMA: {target} | DISTANCIA: 4.22 AL<br>
         ZONA: Habitable | ESTRELLA: Enana Roja<br>
-        <span style="color: #FF3333;">● ANALIZANDO</span>
+        <span style="color: #FF0000;">● ANALIZANDO</span>
     </div>
     """, unsafe_allow_html=True)
     
     st.markdown("### 🧠 AI HEURISTIC ENGINE")
     st.write("CONFIANZA DE LA IA: 94.8%")
-    st.progress(94)
+    st.progress(0.94)
     
-    # El mensaje del operador (el texto en cursiva verde)
-    st.info("""
-    *"Operador, la señal en 298px es de origen tecnológico. La entropía está bajando. No es un fenómeno natural. 
-    Coherencia confirmada en la línea de Hidrógeno."*
-    """)
+    # Mensaje del Operador
+    st.markdown("""
+    <p style='font-style: italic; font-size: 13px; color: #77FF77 !important;'>
+    "Operador, la señal en 298px es de origen tecnológico. La entropía está bajando. No es un fenómeno natural. Coherencia confirmada en la línea de Hidrógeno."
+    </p>
+    """, unsafe_allow_html=True)
     
-    # Terminal Log (El cuadro de logs de la derecha)
+    # Terminal de Logs
     st.markdown(f"""
     <div class="terminal-log">
-        [00:22:02] Patrón detectado. Extrayendo estructura semántica...<br>
-        [00:23:50] Confirmado: El drift doppler coincide con rotación planetaria.<br>
-        [00:21:43] Detectando anomalía de banda estrecha...<br>
-        [00:21:39] Iniciando barrido en Próxima b...<br>
+        [{datetime.now().strftime('%H:%M:%S')}] Patrón detectado. Extrayendo estructura...<br>
+        [LOG] Confirmado: Drift doppler coincide con rotación.<br>
+        [LOG] Detectando anomalía de banda estrecha...<br>
+        [LOG] Iniciando barrido en {target}...<br>
         ◆ SISTEMA NEXUS-7 INICIALIZADO...<br>
-        ◆ IA HEURÍSTICA ONLINE.
+        ◆ IA HEURÍSTICA ONLINE.<br>
+        -------------------------------------------<br>
+        READY FOR DATA INGESTION...
     </div>
     """, unsafe_allow_html=True)
 
-# Footer técnico
-st.write("---")
-st.caption(f"TELEMETRÍA ACTUALIZADA: {datetime.now().strftime('%H:%M:%S')} UTC | ENCRIPTACIÓN DE DATOS: AES-256")
+# Footer
+st.markdown("<br><hr style='border: 0.5px solid #33FF33;'>", unsafe_allow_html=True)
+st.caption("SISTEMA DE SEGURIDAD NEXUS-7 | ACCESO RESTRINGIDO")
