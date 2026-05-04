@@ -23,16 +23,14 @@ INFO_SISTEMAS = {
     "Gliese 581g": {"dist": "20.3 AL", "tipo": "Rocoso", "estrella": "Enana Roja", "hab": "Confirmación Pendiente"}
 }
 
-# --- ESTILOS CSS (Rescatando Blinker y Estilo Hacker) ---
+# --- ESTILOS CSS ---
 st.markdown("""
     <style>
     .stApp { background-color: #010801; color: #00FF41; font-family: 'Courier New', monospace; }
     
-    /* Animación de Alerta (Rescatada) */
     @keyframes blinker { 50% { opacity: 0; } }
     .alert-active { color: #ff0000; font-weight: bold; animation: blinker 1s linear infinite; }
     
-    /* Terminal y Cajas de Datos */
     .ai-terminal { 
         background-color: rgba(0, 10, 0, 0.95); border: 1px solid #00FF41; 
         padding: 15px; font-size: 0.8rem; height: 250px; overflow-y: auto;
@@ -41,13 +39,11 @@ st.markdown("""
     .decoding-box { border: 2px dashed #00FF41; padding: 15px; background: rgba(0,255,65,0.03); margin-top: 10px; }
     .ai-card { border: 1px solid #00FF41; padding: 10px; background: rgba(0,255,65,0.05); }
     
-    /* Botones HUD */
     .stButton>button { border: 1px solid #00FF41 !important; background-color: transparent !important; color: #00FF41 !important; width: 100%; font-weight: bold; }
     .stButton>button:hover { background-color: #00FF41 !important; color: #000 !important; box-shadow: 0 0 25px #00FF41; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- GESTIÓN DE MEMORIA Y ESTADO ---
 if 'ai_log' not in st.session_state:
     st.session_state.ai_log = ["◈ NÚCLEO IA v9.5 MASTER ONLINE", "◈ CARGANDO PROTOCOLOS DE DECODIFICACIÓN..."]
 if 'historial' not in st.session_state:
@@ -60,7 +56,6 @@ def push_log(msg):
 # --- CABECERA ---
 st.title("📡 NEXUS-7: DEEP SPACE ANALYZER v9.5 MASTER")
 
-# --- INYECCIÓN: GUÍA DE USUARIO (Expander) ---
 with st.expander("📖 MANUAL DE OPERACIONES TÉCNICAS"):
     st.markdown("""
     - **TARGET:** Seleccione un objetivo del catálogo estelar.
@@ -69,15 +64,13 @@ with st.expander("📖 MANUAL DE OPERACIONES TÉCNICAS"):
     - **AUDIO-TYPE:** El sistema emite ráfagas de estática o tonos de datos según la señal.
     """)
 
-# --- PANEL DE CONTROL (3 Columnas rescatadas) ---
 col_ctrl, col_stats = st.columns([2, 1])
 
 with col_ctrl:
     c1, c2, c3 = st.columns([1, 1, 1])
     target = c1.selectbox("🎯 OBJETIVO", list(INFO_SISTEMAS.keys()))
     k_scale = c2.select_slider("🌌 ESCALA KARDASHOV", ["Tipo I", "Tipo II", "Tipo III"])
-    audio_mode = c3.checkbox("🔊 AUDIO ANALIZER", value=True)
-    
+    audio_mode = c3.checkbox("🔊 AUDIO ANALYZER", value=True)
     gain = st.slider("📶 GANANCIA DEL SENSOR (dB)", 150, 600, 347)
 
 with col_stats:
@@ -106,7 +99,7 @@ def start_master_scan():
     with col_ai:
         st.subheader("🧠 IA HEURÍSTICA CORE")
         v_conf = st.empty()
-        v_quality = st.empty() # Rescatado: Calidad de señal
+        v_quality = st.empty() 
         v_desc = st.empty()
         v_log = st.empty()
 
@@ -115,7 +108,6 @@ def start_master_scan():
         steps = 85
         matriz = np.random.normal(0.08, 0.02, (steps, 400))
         
-        # Probabilidad técnica
         prob_map = {"Tipo I": 0.25, "Tipo II": 0.55, "Tipo III": 0.90}
         is_alien = random.random() < prob_map[k_scale]
         drift = random.uniform(-0.28, 0.28)
@@ -134,15 +126,28 @@ def start_master_scan():
             
             matriz[t] = linea
             
-            # --- TELEMETRÍA (Rescatado: Calidad Real) ---
+            # --- TELEMETRÍA (Estilo Mejorado para visibilidad) ---
             calidad_real = (max_peak / 10) * 100
-            v_quality.code(f"CALIDAD DE SEÑAL: {calidad_real:.1f}%")
+            v_quality.markdown(f'<div style="color:#00FF41; font-family:monospace; margin-bottom:10px;">CALIDAD DE SEÑAL: {calidad_real:.1f}%</div>', unsafe_allow_html=True)
+            
             conf = min(100, int((t/steps)*100)) if is_alien else random.randint(1, 12)
             v_conf.progress(conf/100, text=f"CONFIANZA IA: {conf}%")
             
-            # --- LOGS NARRATIVOS ---
+            # --- LOGS NARRATIVOS Y SONIDO ---
             if t == 15: push_log(f"Triangulando coordenadas de {target}...")
-            if t == 45 and is_alien: push_log("¡LOCK-ON CONFIRMADO! Estabilizando portadora.")
+            
+            if t == 45 and is_alien: 
+                push_log("¡LOCK-ON CONFIRMADO! Estabilizando portadora.")
+                # INYECCIÓN DE SONIDO
+                if audio_mode:
+                    sr = 44100
+                    dur = 1.2
+                    freq = 880 
+                    t_audio = np.linspace(0, dur, int(sr * dur))
+                    # Tono senoidal + un poco de ruido blanco para efecto espacial
+                    audio_signal = (0.3 * np.sin(2 * np.pi * freq * t_audio)) + np.random.normal(0, 0.02, len(t_audio))
+                    st.audio(audio_signal, format="audio/wav", sample_rate=sr, autoplay=True)
+
             if t == 70 and is_alien: push_log("Sincronizando frames de datos binarios...")
 
             # --- RENDERIZADO WATERFALL ---
@@ -169,7 +174,6 @@ def start_master_scan():
             # --- ACTUALIZACIÓN TERMINAL ---
             v_log.markdown(f'<div class="ai-terminal">{"<br>".join(st.session_state.ai_log)}</div>', unsafe_allow_html=True)
             
-            # Descripción IA (Rescatada)
             status_text = "IA: 'Esperando señal coherente...'"
             if is_alien:
                 status_text = f"IA: '¡ANOMALÍA DETECTADA! Confirmada civilización {k_scale}.'"
@@ -182,7 +186,7 @@ def start_master_scan():
             
             time.sleep(0.03)
 
-        # --- FASE DE DECODIFICACIÓN (Rescatada con barra de progreso) ---
+        # --- FASE DE DECODIFICACIÓN ---
         if is_alien:
             st.toast("CONTACTO ESTABLECIDO", icon="🛸")
             with v_decoding:
@@ -193,11 +197,9 @@ def start_master_scan():
                     time.sleep(0.01)
                     prog_bar.progress(i + 1)
                 
-                # Matriz de mensaje final
                 msg_data = np.random.choice([0, 1], size=(8, 20), p=[0.7, 0.3])
                 st.table(msg_data)
                 
-                # Inyección: Botón de registro manual
                 if st.button("💾 REGISTRAR EN ARCHIVO HISTÓRICO"):
                     st.session_state.historial.append({
                         "Fecha": datetime.now().strftime("%Y-%m-%d %H:%M"),
@@ -210,10 +212,9 @@ def start_master_scan():
 
 start_master_scan()
 
-# --- HISTORIAL DE LA SESIÓN ---
 if st.session_state.historial:
     st.write("---")
     st.subheader("📂 LOGS DE CONTACTO - NEXUS-7")
     st.dataframe(pd.DataFrame(st.session_state.historial), use_container_width=True)
 
-st.caption("NEXUS-7 v9.5 MASTER | AI Intelligence & SETI Protocols | 2024")
+st.caption("NEXUS-7 v9.5 MASTER | AI Intelligence & SETI Protocols | 2026")
