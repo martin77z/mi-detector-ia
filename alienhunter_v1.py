@@ -1,137 +1,148 @@
 import streamlit as st
 import numpy as np
-import pandas as pd
 from datetime import datetime
 
 # =========================================================
-# 1. CONFIGURACIÓN TÉCNICA (Elimina los warnings de la consola)
+# CONFIGURACIÓN RADICAL V9.5 (TOTALMENTE DIFERENTE)
 # =========================================================
-st.set_page_config(page_title="NEXUS-7: DEEP SPACE ANALYZER", layout="wide")
+st.set_page_config(page_title="NEXUS-7 v9.5 PRO", layout="wide")
 
-# Forzado de tema oscuro y eliminación de márgenes innecesarios
 st.markdown("""
 <style>
-    .stApp { background-color: #000000; }
-    h1, h2, h3, p, span, label { 
-        color: #33FF33 !important; 
-        font-family: 'Courier New', Courier, monospace !important; 
-    }
-    
-    /* MODIFICACIÓN DE SLIDERS A ROJO (como en tu foto original) */
-    div[data-baseweb="slider"] > div > div {
-        background-color: #FF0000 !important;
-    }
-    div[role="slider"] {
-        background-color: #FF0000 !important;
-        border: 2px solid #AA0000 !important;
+    /* Fondo oscuro para la zona exterior, pero la app es minimalista */
+    .stApp {
+        background-color: #0b0f0b;
     }
 
-    .status-box { border: 2px solid #33FF33; padding: 15px; background-color: #001100; margin-bottom: 20px; }
-    .terminal-log { border: 1px solid #33FF33; padding: 10px; background-color: #000800; font-size: 11px; }
+    /* TÍTULO VERDE V9.5 */
+    .title-v95 {
+        color: #33FF33;
+        font-family: 'Courier New', monospace;
+        font-size: 28px;
+        font-weight: bold;
+        letter-spacing: 2px;
+    }
+
+    /* SLIDERS ROJOS LARGOS (Estilo v9.5) */
+    div[data-baseweb="slider"] > div {
+        height: 4px;
+        background-color: #ff0000 !important;
+    }
+    div[role="slider"] {
+        background-color: #ff0000 !important;
+        width: 12px;
+        height: 12px;
+    }
     
-    /* Color para la barra de progreso de la IA */
-    .stProgress > div > div > div > div {
-        background-color: #33CCFF;
+    /* PANEL CENTRAL (El cambio que buscabas) */
+    .canvas-container {
+        border: 1px solid #33FF33;
+        background-color: #e0e0e0; /* Fondo claro de la v9.5 */
+        border-radius: 2px;
+    }
+
+    /* MÓDULOS DERECHA */
+    .module-card {
+        border: 1px solid #33FF33;
+        background-color: #000000;
+        padding: 10px;
+        margin-bottom: 10px;
+        color: #33FF33;
+        font-family: 'Courier New', monospace;
+        font-size: 12px;
+    }
+
+    /* Etiquetas de Sliders */
+    label {
+        color: #33FF33 !important;
+        font-size: 10px !important;
+        text-transform: uppercase;
     }
 </style>
 """, unsafe_allow_html=True)
 
 # =========================================================
-# 2. GENERADOR DE MAPA CON COLOR (MODIFICADO)
+# GENERADOR DEL VISUALIZADOR V9.5 (MAPA DE RADIO)
 # =========================================================
-def generar_mapa_estelar_color():
-    # Creamos un lienzo RGB para tener control total del color
-    # h, w = Altura, Anchura del visualizador central
-    h, w = 500, 1000
-    img = np.zeros((h, w, 3), dtype=np.uint8)
+def render_v95_visualizer():
+    # Creamos el fondo claro con la línea de división central
+    h, w = 550, 1100
+    # Color base: Gris muy claro (como en tu foto)
+    img = np.ones((h, w, 3), dtype=np.uint8) * 225
     
-    # === ¡AQUÍ ESTÁ EL CAMBIO DE COLOR! ===
-    # En lugar de blanco, ponemos un fondo Azul Espacial Profundo (Deep Blue)
-    # RGB: [0, 10, 35]
-    img[:] = [0, 10, 35] 
+    # Línea de división central (Eje de frecuencia)
+    img[:, w//2 - 1 : w//2 + 1] = [30, 30, 30]
     
-    # Añadimos ruido estelar granulado (estrellas)
-    # Las estrellas serán de un color Cian Brillante
-    # RGB: [50, 255, 255]
-    num_estrellas = 250
-    for _ in range(num_estrellas):
-        y = np.random.randint(0, h)
-        x = np.random.randint(0, w)
-        img[y-1:y+1, x-1:x+1] = [50, 255, 255] # Estrellas Cian
-    
-    # Línea de señal Doppler (la traza central)
-    # La señal será de un color Verde Neón Brilhante
-    # RGB: [51, 255, 51]
-    for i in range(h):
-        # La señal central (el "Drift")
-        centro = 450 + int(i * 0.05)
-        if centro < w:
-            img[i, centro-1:centro+2] = [51, 255, 51] # Señal Verde
-            
+    # Añadir los puntos de señal (Negros/Grises)
+    # En la v9.5 los puntos son menos pero más marcados
+    for _ in range(400):
+        y, x = np.random.randint(0, h), np.random.randint(0, w)
+        size = np.random.randint(1, 3)
+        img[y:y+size, x:x+size] = [40, 40, 40]
+        
     return img
 
 # =========================================================
-# 3. INTERFAZ DE COMANDO NEXUS-7
+# ESTRUCTURA DE LA INTERFAZ V9.5
 # =========================================================
 
-# Título Principal (v9.0)
-st.markdown("<h1>NEXUS-7: DEEP SPACE ANALYZER v9.0</h1>", unsafe_allow_html=True)
-st.write("HEURISTIC CORE ENABLED // SIGNAL CAPTURE ACTIVE")
+# Encabezado v9.5
+st.markdown('<div class="title-v95">NEXUS-7: DEEP SPACE ANALYZER v9.0</div>', unsafe_allow_html=True)
+st.markdown('<p style="color:#33FF33; font-size:12px; margin-top:-10px;">HEURISTIC CORE ENABLED // SIGNAL CAPTURE ACTIVE</p>', unsafe_allow_html=True)
 
-# Fila Superior: Controles (Sliders ROJOS)
-col_input1, col_input2, col_input3 = st.columns([2, 3, 3])
-with col_input1:
-    objetivo = st.selectbox("OBJETIVO", ["Ross 128 b", "Próxima b", "Andrómeda"])
-with col_input2:
-    st.select_slider("ESCALA KARDASHOV", options=["Tipo I", "Tipo II", "Tipo III"], value="Tipo III")
-with col_input3:
+# Sección de Sliders (Líneas Rojas que cruzan la pantalla)
+col1, col2, col3 = st.columns([1, 2, 2])
+with col1:
+    st.selectbox("OBJETIVO", ["Ross 128 b", "Próxima b", "Kepler"], label_visibility="visible")
+with col2:
+    st.select_slider("ESCALA KARDASHOV", options=["I", "II", "III"], value="III")
+with col3:
     st.slider("GANANCIA SENSORIAL (dB)", 0, 500, 300)
 
-st.markdown("<hr style='border: 1px solid #33FF33;'>", unsafe_allow_html=True)
+st.markdown("<br>", unsafe_allow_html=True)
 
-# Layout Principal: Visualizador | Panel de IA
-col_viz, col_ia = st.columns([2.5, 1])
+# Cuerpo Principal
+main_col, side_col = st.columns([3, 1])
 
-with col_viz:
-    # Generamos el mapa estelar con los NUEVOS COLORES
-    mapa_color = generar_mapa_estelar_color()
-    # USAMOS use_container_width=True para la visualización modular correcta
-    st.image(mapa_color, use_container_width=True)
-    st.markdown("<p style='font-size: 10px; color: #33FF33;'>BARRIDO DE FRECUENCIA ACTIVO | SENSOR: VLA-ARRAY 4</p>", unsafe_allow_html=True)
+with main_col:
+    # El visualizador central con el nuevo estilo
+    canvas = render_v95_visualizer()
+    st.image(canvas, use_container_width=True)
+    st.markdown("<p style='color:#33FF33; font-size:10px;'>BARRIDO DE FRECUENCIA ACTIVO | SENSOR: VLA-ARRAY 4</p>", unsafe_allow_html=True)
 
-with col_ia:
-    # Cuadro de Info del Sistema (Superior Derecha)
+with side_col:
+    # Módulo de Datos
     st.markdown(f"""
-    <div class="status-box">
-        SISTEMA: {objetivo} | DISTANCIA: 4.22 AL<br>
+    <div class="module-card">
+        SISTEMA: ROSS 128 b | DISTANCIA: 4.22 AL<br>
         ZONA: Habitable | ESTRELLA: Enana Roja<br>
-        <span style="color: #FF0000;">● ANALIZANDO...</span>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    st.markdown("### 🧠 AI HEURISTIC ENGINE")
-    st.write("CONFIANZA DE LA IA: 94.8%")
-    st.progress(0.94)
-    
-    # El mensaje del Operador (Cita textual en verde brillante)
-    st.markdown("""
-    <p style='color: #33FF33; font-style: italic; font-size: 13px; background-color: #001100; padding: 10px; border-left: 3px solid #33FF33;'>
-    *"Operador, la señal detectada es de origen tecnológico. La entropía está bajando. No es un fenómeno natural. Coherencia confirmada en la línea de Hidrógeno."*
-    </p>
-    """, unsafe_allow_html=True)
-    
-    # Terminal Log (El cuadro de logs estilo terminal de la foto)
-    st.markdown(f"""
-    <div class="terminal-log">
-        [{datetime.now().strftime('%H:%M:%S')}] Iniciando escaneo sector Ross...<br>
-        [00:23:50] Confirmado: Drift doppler detectado.<br>
-        [00:21:43] Anomalía de banda estrecha en 1420MHz.<br>
-        -------------------------------------------<br>
-        ◆ SISTEMA NEXUS-7 INICIALIZADO...<br>
-        ◆ IA HEURÍSTICA: BUSCANDO PATRONES...
+        <span style="color: #00FF00;">● ANALIZANDO...</span>
     </div>
     """, unsafe_allow_html=True)
 
-# Footer de Seguridad
-st.markdown("<br><hr style='border: 0.5px solid #33FF33;'>", unsafe_allow_html=True)
-st.caption("SISTEMA DE SEGURIDAD NEXUS-7 v9.5 | PROTOCOLO DE RADIOASTRONOMÍA ACTIVO")
+    # Motor IA
+    st.markdown("<p style='color:#33FF33; font-weight:bold; margin-bottom:2px;'>🧠 AI HEURISTIC ENGINE</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color:#33FF33; font-size:10px;'>CONFIANZA: 94.8%</p>", unsafe_allow_html=True)
+    st.progress(0.94)
+
+    # Mensaje del Operador
+    st.markdown("""
+    <div style="border-left: 2px solid #33FF33; padding-left: 10px; margin: 15px 0;">
+        <i style="color:#33FF33; font-size:11px;">"Operador, la señal detectada es de origen tecnológico. Coherencia confirmada."</i>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Log Terminal Compacto
+    st.markdown(f"""
+    <div class="module-card" style="height: 180px; overflow: hidden; font-size: 10px;">
+        [{datetime.now().strftime('%H:%M:%S')}] Escaneando sector...<br>
+        [LOG] Anomalía detectada en canal 298.<br>
+        [LOG] Coherencia de señal confirmada.<br>
+        [LOG] Desplazamiento Doppler detectado.<br>
+        ------------------------------------<br>
+        ◆ NEXUS-7 CORE: ONLINE<br>
+        ◆ IA HEURÍSTICA: BUSCANDO...
+    </div>
+    """, unsafe_allow_html=True)
+
+st.caption("v9.5 | SECURE LINK | ACCESO RESTRINGIDO")
