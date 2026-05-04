@@ -2,14 +2,14 @@ import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 import time
+import random
 import pandas as pd
 from datetime import datetime
-import os
 
-# --- CONFIGURACIÓN NEXUS-7 v9.5 MASTER (INTACTA) ---
+# --- CONFIGURACIÓN NEXUS-7 v9.5 MASTER ---
 st.set_page_config(page_title="NEXUS-7 AI v9.5", page_icon="👽", layout="wide")
 
-# --- BASE DE DATOS CIENTÍFICA (INTACTA) ---
+# --- BASE DE DATOS CIENTÍFICA EXPANDIDA ---
 INFO_SISTEMAS = {
     "Próxima b": {"dist": "4.24 AL", "tipo": "Terrestre", "estrella": "Enana Roja (M)", "hab": "Zona Habitable"},
     "Ross 128 b": {"dist": "11.03 AL", "tipo": "Templado", "estrella": "Enana Roja Inactiva", "hab": "Confirmada"},
@@ -23,12 +23,16 @@ INFO_SISTEMAS = {
     "Gliese 581g": {"dist": "20.3 AL", "tipo": "Rocoso", "estrella": "Enana Roja", "hab": "Confirmación Pendiente"}
 }
 
-# --- ESTILOS CSS (TU INTERFAZ ORIGINAL v9.5) ---
+# --- ESTILOS CSS (Rescatando Blinker y Estilo Hacker) ---
 st.markdown("""
     <style>
     .stApp { background-color: #010801; color: #00FF41; font-family: 'Courier New', monospace; }
+    
+    /* Animación de Alerta (Rescatada) */
     @keyframes blinker { 50% { opacity: 0; } }
     .alert-active { color: #ff0000; font-weight: bold; animation: blinker 1s linear infinite; }
+    
+    /* Terminal y Cajas de Datos */
     .ai-terminal { 
         background-color: rgba(0, 10, 0, 0.95); border: 1px solid #00FF41; 
         padding: 15px; font-size: 0.8rem; height: 250px; overflow-y: auto;
@@ -36,14 +40,16 @@ st.markdown("""
     }
     .decoding-box { border: 2px dashed #00FF41; padding: 15px; background: rgba(0,255,65,0.03); margin-top: 10px; }
     .ai-card { border: 1px solid #00FF41; padding: 10px; background: rgba(0,255,65,0.05); }
+    
+    /* Botones HUD */
     .stButton>button { border: 1px solid #00FF41 !important; background-color: transparent !important; color: #00FF41 !important; width: 100%; font-weight: bold; }
     .stButton>button:hover { background-color: #00FF41 !important; color: #000 !important; box-shadow: 0 0 25px #00FF41; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- GESTIÓN DE MEMORIA (INTACTA) ---
+# --- GESTIÓN DE MEMORIA Y ESTADO ---
 if 'ai_log' not in st.session_state:
-    st.session_state.ai_log = ["◈ NÚCLEO IA v9.5 MASTER ONLINE", "◈ CARGANDO DATOS DE ANTENA..."]
+    st.session_state.ai_log = ["◈ NÚCLEO IA v9.5 MASTER ONLINE", "◈ CARGANDO PROTOCOLOS DE DECODIFICACIÓN..."]
 if 'historial' not in st.session_state:
     st.session_state.historial = []
 
@@ -54,7 +60,16 @@ def push_log(msg):
 # --- CABECERA ---
 st.title("📡 NEXUS-7: DEEP SPACE ANALYZER v9.5 MASTER")
 
-# --- PANEL DE CONTROL (INTACTO) ---
+# --- INYECCIÓN: GUÍA DE USUARIO (Expander) ---
+with st.expander("📖 MANUAL DE OPERACIONES TÉCNICAS"):
+    st.markdown("""
+    - **TARGET:** Seleccione un objetivo del catálogo estelar.
+    - **GAIN (dB):** Ajuste la sensibilidad. Picos superiores a 6.0 sugieren origen artificial.
+    - **LOCK-ON:** Si aparece el cuadro verde, no aborte el proceso; la IA está triangulando.
+    - **AUDIO-TYPE:** El sistema emite ráfagas de estática o tonos de datos según la señal.
+    """)
+
+# --- PANEL DE CONTROL (3 Columnas rescatadas) ---
 col_ctrl, col_stats = st.columns([2, 1])
 
 with col_ctrl:
@@ -62,6 +77,7 @@ with col_ctrl:
     target = c1.selectbox("🎯 OBJETIVO", list(INFO_SISTEMAS.keys()))
     k_scale = c2.select_slider("🌌 ESCALA KARDASHOV", ["Tipo I", "Tipo II", "Tipo III"])
     audio_mode = c3.checkbox("🔊 AUDIO ANALIZER", value=True)
+    
     gain = st.slider("📶 GANANCIA DEL SENSOR (dB)", 150, 600, 347)
 
 with col_stats:
@@ -71,25 +87,11 @@ with col_stats:
         <b>SISTEMA:</b> {target}<br>
         <b>DATA:</b> {d['dist']} | {d['estrella']}<br>
         <b>PROB. HABIT:</b> {d['hab']}<br>
-        <span style="color:#888;">STATUS: LEYENDO SEÑAL DE ANTENA</span>
+        <span style="color:#888;">STATUS: SISTEMA DE ESCANEO ARMADO</span>
     </div>
     """, unsafe_allow_html=True)
 
 st.divider()
-
-# --- LÓGICA DE MEDICIÓN REAL (Sustituye a la simulación) ---
-def leer_datos_antena():
-    """Lee el archivo potencia.txt generado por la lectura de señal real"""
-    if os.path.exists('potencia.txt'):
-        try:
-            data = np.loadtxt('potencia.txt')
-            # Ajustar tamaño a 400 píxeles para el visualizador
-            if data.size != 400:
-                data = np.interp(np.linspace(0, data.size, 400), np.arange(data.size), data)
-            return data
-        except Exception as e:
-            return np.random.normal(0.1, 0.02, 400) # Fallback ruido si el archivo está vacío
-    return np.random.normal(0.1, 0.02, 400)
 
 # --- NÚCLEO DE PROCESAMIENTO ---
 @st.fragment
@@ -104,49 +106,62 @@ def start_master_scan():
     with col_ai:
         st.subheader("🧠 IA HEURÍSTICA CORE")
         v_conf = st.empty()
-        v_quality = st.empty()
+        v_quality = st.empty() # Rescatado: Calidad de señal
         v_desc = st.empty()
         v_log = st.empty()
 
     if st.button("🚀 EJECUTAR ESCANEO PROFUNDO"):
-        st.session_state.ai_log = ["◈ INICIANDO LECTURA DE HARDWARE..."]
+        st.session_state.ai_log = ["◈ INICIANDO BARRIDO DE FRECUENCIAS..."]
         steps = 85
-        matriz = np.zeros((steps, 400))
+        matriz = np.random.normal(0.08, 0.02, (steps, 400))
+        
+        # Probabilidad técnica
+        prob_map = {"Tipo I": 0.25, "Tipo II": 0.55, "Tipo III": 0.90}
+        is_alien = random.random() < prob_map[k_scale]
+        drift = random.uniform(-0.28, 0.28)
+        start_px = random.randint(110, 290)
         
         for t in range(steps):
-            # OBTENEMOS DATOS REALES
-            linea = leer_datos_antena() * (gain / 100) # Aplicamos tu ganancia seleccionada
+            linea = np.random.normal(0.08, 0.02, 400)
+            max_peak = np.max(linea)
+            
+            if is_alien:
+                pos = int(start_px + (t * drift))
+                if 0 <= pos < 400:
+                    linea[pos] = (gain / 70) * (1 + random.random()*0.1)
+                    linea[max(0,pos-1):min(400,pos+2)] += (gain/140)
+                    max_peak = linea[pos]
+            
             matriz[t] = linea
             
-            # TELEMETRÍA BASADA EN DATOS REALES
-            max_peak = np.max(linea)
-            calidad_real = min(100.0, (max_peak / 15) * 100)
+            # --- TELEMETRÍA (Rescatado: Calidad Real) ---
+            calidad_real = (max_peak / 10) * 100
             v_quality.code(f"CALIDAD DE SEÑAL: {calidad_real:.1f}%")
-            
-            # La IA ahora evalúa la calidad real de la antena
-            conf = int(calidad_real)
+            conf = min(100, int((t/steps)*100)) if is_alien else random.randint(1, 12)
             v_conf.progress(conf/100, text=f"CONFIANZA IA: {conf}%")
             
-            # --- LOGS (Respetando el ritmo de tu interfaz) ---
-            if t == 15: push_log(f"Sincronizando con antena en {target}...")
-            if t == 45 and calidad_real > 60: push_log("¡ANOMALÍA DETECTADA EN HARDWARE!")
-            
-            # --- RENDERIZADO WATERFALL (Misma interfaz, datos reales) ---
+            # --- LOGS NARRATIVOS ---
+            if t == 15: push_log(f"Triangulando coordenadas de {target}...")
+            if t == 45 and is_alien: push_log("¡LOCK-ON CONFIRMADO! Estabilizando portadora.")
+            if t == 70 and is_alien: push_log("Sincronizando frames de datos binarios...")
+
+            # --- RENDERIZADO WATERFALL ---
             fig1, ax1 = plt.subplots(figsize=(10, 5), facecolor='black')
-            # Usamos 'viridis' para datos base y 'magma' si hay picos altos (señal real)
-            current_cmap = 'magma' if calidad_real > 50 else 'viridis'
-            ax1.imshow(matriz, aspect='auto', cmap=current_cmap, origin='lower')
+            ax1.imshow(matriz, aspect='auto', cmap='magma' if is_alien else 'viridis', origin='lower')
+            if is_alien and t > 15:
+                ax1.axvspan(pos-12, pos+12, color='#00FF41', alpha=0.15)
+                ax1.text(pos+15, t, "LOCK-ON", color='#00FF41', fontsize=9, fontweight='bold')
             ax1.axis('off')
             v_wat.pyplot(fig1, clear_figure=True)
             plt.close(fig1)
 
-            # --- RENDERIZADO POTENCIA (Misma interfaz, datos reales) ---
+            # --- RENDERIZADO POTENCIA ---
             fig2, ax2 = plt.subplots(figsize=(10, 2), facecolor='black')
-            color_sig = '#ff3300' if calidad_real > 70 else '#00FF41'
+            color_sig = '#ff3300' if is_alien and k_scale == "Tipo III" else '#00FF41'
             ax2.plot(linea, color=color_sig, linewidth=0.8)
             ax2.fill_between(range(400), linea, color=color_sig, alpha=0.1)
             ax2.set_facecolor('black')
-            ax2.set_ylim(0, max(20, max_peak + 5))
+            ax2.set_ylim(0, 12)
             ax2.axis('off')
             v_pow.pyplot(fig2, clear_figure=True)
             plt.close(fig2)
@@ -154,20 +169,51 @@ def start_master_scan():
             # --- ACTUALIZACIÓN TERMINAL ---
             v_log.markdown(f'<div class="ai-terminal">{"<br>".join(st.session_state.ai_log)}</div>', unsafe_allow_html=True)
             
-            # Mensajes de la IA basados en la antena
-            if calidad_real > 70:
-                v_desc.markdown(f'<p class="alert-active">IA: ¡COHERENCIA DETECTADA EN POTENCIA.TXT!</p>', unsafe_allow_html=True)
+            # Descripción IA (Rescatada)
+            status_text = "IA: 'Esperando señal coherente...'"
+            if is_alien:
+                status_text = f"IA: '¡ANOMALÍA DETECTADA! Confirmada civilización {k_scale}.'"
+                if k_scale == "Tipo III":
+                    v_desc.markdown(f'<p class="alert-active">{status_text}</p>', unsafe_allow_html=True)
+                else:
+                    v_desc.markdown(f'<div style="color:#00FF41;">{status_text}</div>', unsafe_allow_html=True)
             else:
-                v_desc.write("IA: 'Procesando estática de la antena...'")
+                v_desc.write(status_text)
             
             time.sleep(0.03)
 
+        # --- FASE DE DECODIFICACIÓN (Rescatada con barra de progreso) ---
+        if is_alien:
+            st.toast("CONTACTO ESTABLECIDO", icon="🛸")
+            with v_decoding:
+                st.markdown('<div class="decoding-box">', unsafe_allow_html=True)
+                st.write("🧩 PROCESANDO MENSAJE BINARIO...")
+                prog_bar = st.progress(0)
+                for i in range(100):
+                    time.sleep(0.01)
+                    prog_bar.progress(i + 1)
+                
+                # Matriz de mensaje final
+                msg_data = np.random.choice([0, 1], size=(8, 20), p=[0.7, 0.3])
+                st.table(msg_data)
+                
+                # Inyección: Botón de registro manual
+                if st.button("💾 REGISTRAR EN ARCHIVO HISTÓRICO"):
+                    st.session_state.historial.append({
+                        "Fecha": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                        "Objetivo": target,
+                        "Tipo": k_scale,
+                        "Calidad": f"{calidad_real:.1f}%"
+                    })
+                    st.success("REGISTRO GUARDADO.")
+                st.markdown('</div>', unsafe_allow_html=True)
+
 start_master_scan()
 
-# --- HISTORIAL (INTACTO) ---
+# --- HISTORIAL DE LA SESIÓN ---
 if st.session_state.historial:
     st.write("---")
     st.subheader("📂 LOGS DE CONTACTO - NEXUS-7")
     st.dataframe(pd.DataFrame(st.session_state.historial), use_container_width=True)
 
-st.caption("NEXUS-7 v9.5 MASTER | MODULADOR DE ANTENA REAL | 2024")
+st.caption("NEXUS-7 v9.5 MASTER | AI Intelligence & SETI Protocols | 2024")
